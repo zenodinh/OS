@@ -254,7 +254,7 @@ void ExceptionHandler(ExceptionType which)
 
 			int virtAddr = kernel->machine->ReadRegister(4);
 			int type = kernel->machine->ReadRegister(5);
-			filenameMaxLength = 20;
+			filenameMaxLength = 30;
 			// Chuyen du lieu tu user space sang kernel space
 			filename = User2Kernel(virtAddr, filenameMaxLength + 1);
 			// Kiem tra con vi tri trong cua bang mo ta fileTable de them vao
@@ -265,9 +265,13 @@ void ExceptionHandler(ExceptionType which)
 				// Kiem tra kieu file muon thuc thi co thuoc loai chi doc hoac doc va ghi khong
 				if (type == OnlyRead || type == ReadAndWrite)
 				{
+
 					// Mo file va them vao bang mo ta fileTable
 					if ((kernel->fileSystem->fileTable[freeSlot] = kernel->fileSystem->Open(filename, type)) != NULL)
+					{
 						kernel->machine->WriteRegister(2, freeSlot);
+						printf("free slot = %d,\t", freeSlot);
+					}
 				}
 				else if (type == 2) // Quy uoc la stdin
 					kernel->machine->WriteRegister(2, InputConsoleIn);
@@ -387,7 +391,7 @@ void ExceptionHandler(ExceptionType which)
 			}
 			else
 			{
-				printf("\nTap tin khong co du lieu");
+				DEBUG(dbgSys, "Tap tin khong co du lieu!!\n");
 				kernel->machine->WriteRegister(2, -2);
 			}
 			delete buffer;
@@ -476,7 +480,305 @@ void ExceptionHandler(ExceptionType which)
 			ASSERTNOTREACHED();
 			break;
 		}
+		case SC_Exec:
+		{
+			char *name;
+			int maxLength = 30;
+			OpenFile *file;
+			int result;
+			int virtAddr = kernel->machine->ReadRegister(4);
+			name = User2Kernel(virtAddr, maxLength);
+			if (name == "") // Truong hop name khong hop le
+			{
+				printf("Loi: Ten chuong trinh truyen vao rong!!\n");
+				kernel->machine->WriteRegister(2, -1);
+				IncreaseCounter();
+				return;
+				ASSERTNOTREACHED();
+				break;
+			}
+			file = kernel->fileSystem->Open(name);
+			if (file == NULL) // Truong hop khong mo duoc file
+			{
+				printf("Loi: Khong the mo duoc file!!\n");
+				kernel->machine->WriteRegister(2, -1);
+				IncreaseCounter();
+				return;
+				ASSERTNOTREACHED();
+				break;
+			}
+			// Truong hop nay da mo duoc file
+			result = kernel->pTab->ExecUpdate(name);
+			kernel->machine->WriteRegister(2, result);
+			delete[] name;
 
+			IncreaseCounter();
+			return;
+			ASSERTNOTREACHED();
+			break;
+		}
+		case SC_Join:
+		{
+			SpaceId id = kernel->machine->ReadRegister(4); // Doc id tu thanh ghi R4
+
+			int result = kernel->pTab->JoinUpdate(id);
+			kernel->machine->WriteRegister(2, result);
+
+			IncreaseCounter();
+			return;
+			ASSERTNOTREACHED();
+			break;
+		}
+		case SC_Exit:
+		{
+			int exitStatus = kernel->machine->ReadRegister(4);
+			// Truong hop exitStatus != 0 nghia la chuong trinh bi loi
+			if (exitStatus != 0)
+			{
+				IncreaseCounter();
+				return;
+				ASSERTNOTREACHED();
+				break;
+			}
+			// Truong hop chuong trinh hoan thanh thanh cong
+			// Goi ham cap nhat exit
+			int result = kernel->pTab->ExitUpdate(exitStatus);
+			// Giai phong chuong trinh khi ket thuc ham
+			kernel->currentThread->FreeSpace();
+			kernel->currentThread->Finish();
+			IncreaseCounter();
+			return;
+			ASSERTNOTREACHED();
+			break;
+		}
+
+		case SC_CreateSemaphore:
+		{
+			int fname_size = 32;
+			//Read name address
+			int nameAddr = kernel->machine->ReadRegister(4);
+
+			//Read semval
+			int semval = kernel->machine->ReadRegister(5);
+
+			char *name = User2Kernel(nameAddr, fname_size);
+
+			if (name == NULL)
+			{
+				DEBUG('a', "\n Not enough memory in System");
+				printf("\n Not enough memory in System");
+				kernel->machine->WriteRegister(2, -1);
+				delete[] name;
+				IncreaseCounter();
+				return;
+			}
+
+			int res = kernel->semTab->Create(name, semval);
+
+			if (res == -1)
+			{
+				DEBUG('a', "\n Khong the khoi tao semaphore");
+				printf("\n Khong the khoi tao semaphore");
+				kernel->machine->WriteRegister(2, -1);
+				delete[] name;
+				IncreaseCounter();
+				return;
+			}
+
+			delete[] name;
+			kernel->machine->WriteRegister(2, res);
+			IncreaseCounter();
+			return;
+		}
+
+		case SC_Wait:
+		{
+			int fname_size = 32;
+			// Read name from r4
+			int nameAddr = kernel->machine->ReadRegister(4);
+			// Read name from kernel
+			char *name = User2Kernel(nameAddr, fname_size);
+
+			// Check name is available
+			if (name == NULL)
+			{
+				DEBUG('a', "\n Not enough memory in System");
+				printf("\n Not enough memory in System");
+				kernel->machine->WriteRegister(2, -1);
+				delete[] name;
+				IncreaseCounter();
+				return;
+			}
+
+			// Check name in Stab
+			int check = kernel->semTab->Wait(name);
+			if (check == -1)
+			{
+				DEBUG('a', "\n Khong ton tai ten semaphore nay!");
+				printf("\n Khong ton tai ten semaphore nay!");
+				kernel->machine->WriteRegister(2, -1);
+				delete[] name;
+				IncreaseCounter();
+				return;
+			}
+			delete[] name;
+
+			kernel->machine->WriteRegister(2, check);
+			IncreaseCounter();
+			return;
+		}
+
+		case SC_Signal:
+		{
+			int fname_size = 32;
+			// Read name from r4
+			int nameAddr = kernel->machine->ReadRegister(4);
+			// Read name from kernel
+			char *name = User2Kernel(nameAddr, fname_size);
+
+			// Check name is available
+			if (name == NULL)
+			{
+				DEBUG('a', "\n Not enough memory in System");
+				printf("\n Not enough memory in System");
+				kernel->machine->WriteRegister(2, -1);
+				delete[] name;
+				IncreaseCounter();
+				return;
+			}
+
+			// Check name in Stab
+			int check = kernel->semTab->Signal(name);
+			if (check == -1)
+			{
+				DEBUG('a', "\n Khong ton tai ten semaphore nay!");
+				printf("\n Khong ton tai ten semaphore nay!");
+				kernel->machine->WriteRegister(2, -1);
+				delete[] name;
+				IncreaseCounter();
+				return;
+			}
+			delete[] name;
+
+			kernel->machine->WriteRegister(2, check);
+			IncreaseCounter();
+			return;
+		}
+
+		case SC_Seek:
+		{
+			//** Input: position (vi tri can seek toi), id (file id cua tap tin can seek)
+			//** Output: -1 neu that bai, 0 neu thanh cong
+
+			int position = kernel->machine->ReadRegister(4);  // Doc vi tri can tro toi
+			OpenFileId id = kernel->machine->ReadRegister(5); // Doc file id
+
+			//TODO: Kiem tra id co hop le khong
+			if (id < 0 || id > 9) // id hop le: 0 -> 9
+			{
+				printf("\nLoi seek: ID nam ngoai pham vi hop le!!\n");
+				kernel->machine->WriteRegister(2, -1);
+
+				IncreaseCounter();
+				return;
+				ASSERTNOTREACHED();
+				break;
+			}
+			//TODO: Kiem tra voi id nay co mo file duoc khong
+			if (kernel->fileSystem->fileTable[id] == NULL)
+			{
+				printf("\nLoi seek: file co id: %d khong ton tai!!\n", id);
+				kernel->machine->WriteRegister(2, -1);
+
+				IncreaseCounter();
+				return;
+				ASSERTNOTREACHED();
+				break;
+			}
+			//TODO: Kiem tra position co hop le
+			if (position == -1) // Vi tri nay thi gan vao cuoi file
+				position = kernel->fileSystem->fileTable[id]->Length();
+			else if (position < 0 || position > kernel->fileSystem->fileTable[id]->Length()) // Vị trí hiện tại không thể seek tới được
+			{
+				printf("\nLoi seek: Vi tri %d nam ngoai pham vi kich thuoc cua tap tin co id = %d", position, id);
+				kernel->machine->WriteRegister(2, -1);
+
+				IncreaseCounter();
+				return;
+				ASSERTNOTREACHED();
+				break;
+			}
+			else // Truong hop ma position co the seek toi duoc
+			{
+				kernel->fileSystem->fileTable[id]->Seek(position);
+				kernel->machine->WriteRegister(2, 0); // Tra ve 0 khi thanh cong
+			}
+			IncreaseCounter();
+			return;
+			ASSERTNOTREACHED();
+			break;
+		}
+
+		case SC_GetProcessID:
+		{
+			//** Input: void (không co dau vao)
+			//** Output: process ID hien tai
+
+			kernel->machine->WriteRegister(2, kernel->currentThread->processID);
+
+			IncreaseCounter();
+			return;
+			ASSERTNOTREACHED();
+			break;
+		}
+
+		case SC_GetFileLength:
+		{
+			//** Input: file ID (id cua file dang mo)
+			//** Output: -1 neu that bai, kich thuoc file neu thanh cong
+
+			int fid = (int)kernel->machine->ReadRegister(4); // Doc id cua file tu thanh ghi r4
+			printf("id = %d\n", fid);
+			// Do bang fileTable chi quan ly 10 file (bao gom ca STDIN va STDOUT)
+			if (fid < 0 || fid > 9)
+			{
+				printf("Loi getFileLength: id nam ngoai bang fileTable!!\n");
+				IncreaseCounter();
+				return;
+				ASSERTNOTREACHED();
+				break;
+			}
+			//TODO: Kiem tra file voi fid co ton tai
+			if (kernel->fileSystem->fileTable[fid] == NULL)
+			{
+				printf("Loi getFileLength: file nay khong ton tai!!\n");
+				IncreaseCounter();
+				return;
+				ASSERTNOTREACHED();
+				break;
+			}
+			// Truoc khi tinh do dai file can luu lai con tro hien tai
+			int currentPosition = kernel->fileSystem->fileTable[fid]->GetCurrentPos();
+			// Ta phai dua con tro ve 0 de bat dau duyet file
+			kernel->fileSystem->fileTable[fid]->Seek(0);
+
+			char tempChar;
+			int fileLength = 0;
+			/* Do ta khong biet chinh xac do dai cua file nen
+			* doc tung ki tu co trong file vao tempChar
+			* cap nhat so luong vao fileLength
+			* qua trinh se dung khi ham Read khong tra ve 1 nua
+			*/
+			while (kernel->fileSystem->fileTable[fid]->Read(&tempChar, 1) == 1)
+				++fileLength;
+			// Sau khi duyet thi dat con tro ve vi tri cu
+			kernel->fileSystem->fileTable[fid]->Seek(currentPosition);
+			kernel->machine->WriteRegister(2, fileLength);
+			IncreaseCounter();
+			return;
+			ASSERTNOTREACHED();
+			break;
+		}
 		default:
 			cerr << "Unexpected system call " << type << "\n";
 			break;

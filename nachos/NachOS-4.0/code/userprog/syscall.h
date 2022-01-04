@@ -45,6 +45,13 @@
 #define SC_ReadString       48
 #define SC_PrintString      49
 
+// Lab2
+#define SC_CreateSemaphore  50
+#define SC_Wait             51
+#define SC_Signal           52
+#define SC_GetProcessID     53
+#define SC_GetFileLength    54
+
 #ifndef IN_ASM
 
 /* The system call interface.  These are the operations the Nachos
@@ -193,6 +200,18 @@ void PrintChar(char character);
 int RandomNum();
 void ReadString(char* buffer, int length);
 void PrintString (char* buffer);
+
+// Lab2 function
+int CreateSemaphore(char* name, int semval);
+int Wait(char* name);
+int Signal(char* name);
+// Ham se tra ve current thread (process id hien tai)
+int GetProcessID();
+/* Ham se tra ve kich thuoc thuc te cua file
+*+ Input: fileId la id fuc file khi Open
+*+ Output: -1 neu that bai, kich thuoc file neu thanh cong
+*/
+int GetFileLength(OpenFileId id);
 
 #endif /* IN_ASM */
 

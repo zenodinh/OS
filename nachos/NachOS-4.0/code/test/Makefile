@@ -112,7 +112,7 @@ ifeq ($(hosttype),unknown)
 PROGRAMS = unknownhost
 else
 # change this if you create a new test program!
-PROGRAMS = add halt shell matmult sort segments PrintNum PrintChar RandomNum ascii help sort PrintString FileTest 
+PROGRAMS = add halt shell matmult sort segments PrintNum PrintChar RandomNum ascii help sort PrintString FileTest sinhvien sinhvien_voinuoc
 endif
 
 all: $(PROGRAMS)
@@ -157,7 +157,7 @@ matmult: matmult.o start.o
 	$(LD) $(LDFLAGS) start.o matmult.o -o matmult.coff
 	$(COFF2NOFF) matmult.coff matmult
 
-## Lab
+## Lab1
 PrintNum.o: PrintNum.c
 	$(CC) $(CFLAGS) -c PrintNum.c
 PrintNum: PrintNum.o start.o
@@ -194,11 +194,26 @@ PrintString: PrintString.o start.o
 	$(LD) $(LDFLAGS) start.o PrintString.o -o PrintString.coff
 	$(COFF2NOFF) PrintString.coff PrintString
 
+###Lab2 phan 1
 FileTest.o: FileTest.c
 	$(CC) $(CFLAGS) -c FileTest.c
 FileTest: FileTest.o start.o
 	$(LD) $(LDFLAGS) start.o FileTest.o -o FileTest.coff
 	$(COFF2NOFF) FileTest.coff FileTest
+
+###Lab2 phan 2 + 3
+sinhvien.o: sinhvien.c
+	$(CC) $(CFLAGS) -c sinhvien.c
+sinhvien: sinhvien.o start.o
+	$(LD) $(LDFLAGS) start.o sinhvien.o -o sinhvien.coff
+	$(COFF2NOFF) sinhvien.coff sinhvien
+
+sinhvien_voinuoc.o: sinhvien_voinuoc.c
+	$(CC) $(CFLAGS) -c sinhvien_voinuoc.c
+sinhvien_voinuoc: sinhvien_voinuoc.o start.o
+	$(LD) $(LDFLAGS) start.o sinhvien_voinuoc.o -o sinhvien_voinuoc.coff
+	$(COFF2NOFF) sinhvien_voinuoc.coff sinhvien_voinuoc
+
 
 
 clean:
