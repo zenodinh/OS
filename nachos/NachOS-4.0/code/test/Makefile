@@ -112,7 +112,7 @@ ifeq ($(hosttype),unknown)
 PROGRAMS = unknownhost
 else
 # change this if you create a new test program!
-PROGRAMS = add halt shell matmult sort segments
+PROGRAMS = add halt shell matmult sort segments PrintNum PrintChar RandomNum ascii help sort PrintString FileTest 
 endif
 
 all: $(PROGRAMS)
@@ -156,6 +156,50 @@ matmult.o: matmult.c
 matmult: matmult.o start.o
 	$(LD) $(LDFLAGS) start.o matmult.o -o matmult.coff
 	$(COFF2NOFF) matmult.coff matmult
+
+## Lab
+PrintNum.o: PrintNum.c
+	$(CC) $(CFLAGS) -c PrintNum.c
+PrintNum: PrintNum.o start.o
+	$(LD) $(LDFLAGS) start.o PrintNum.o -o PrintNum.coff
+	$(COFF2NOFF) PrintNum.coff PrintNum
+
+PrintChar.o: PrintChar.c
+	$(CC) $(CFLAGS) -c PrintChar.c
+PrintChar: PrintChar.o start.o
+	$(LD) $(LDFLAGS) start.o PrintChar.o -o PrintChar.coff
+	$(COFF2NOFF) PrintChar.coff PrintChar
+
+RandomNum.o: RandomNum.c
+	$(CC) $(CFLAGS) -c RandomNum.c
+RandomNum: RandomNum.o start.o
+	$(LD) $(LDFLAGS) start.o RandomNum.o -o RandomNum.coff
+	$(COFF2NOFF) RandomNum.coff RandomNum
+
+ascii.o: ascii.c
+	$(CC) $(CFLAGS) -c ascii.c
+ascii: ascii.o start.o
+	$(LD) $(LDFLAGS) start.o ascii.o -o ascii.coff
+	$(COFF2NOFF) ascii.coff ascii
+
+help.o: help.c
+	$(CC) $(CFLAGS) -c help.c
+help: help.o start.o
+	$(LD) $(LDFLAGS) start.o help.o -o help.coff
+	$(COFF2NOFF) help.coff help
+
+PrintString.o: PrintString.c
+	$(CC) $(CFLAGS) -c PrintString.c
+PrintString: PrintString.o start.o
+	$(LD) $(LDFLAGS) start.o PrintString.o -o PrintString.coff
+	$(COFF2NOFF) PrintString.coff PrintString
+
+FileTest.o: FileTest.c
+	$(CC) $(CFLAGS) -c FileTest.c
+FileTest: FileTest.o start.o
+	$(LD) $(LDFLAGS) start.o FileTest.o -o FileTest.coff
+	$(COFF2NOFF) FileTest.coff FileTest
+
 
 clean:
 	$(RM) -f *.o *.ii

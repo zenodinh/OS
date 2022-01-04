@@ -1,69 +1,76 @@
-/* sort.c 
- *    Test program to sort a large number of integers.
+/* halt.c
+ *	Simple program to test whether running a user program works.
+ *	
+ *	Just do a "syscall" that shuts down the OS.
  *
- *    Intention is to stress virtual memory system.
- *
- *    Ideally, we could read the unsorted array off of the file system,
- *	and store the result back to the file system!
+ * 	NOTE: for some reason, user programs with global data structures 
+ *	sometimes haven't worked in the Nachos environment.  So be careful
+ *	out there!  One option is to allocate data structures as 
+ * 	automatics within a procedure, but if you do this, you have to
+ *	be careful to allocate a big enough stack to hold the automatics!
  */
 
-
-/*
-#define UNIX
-#define UNIX_DEBUG
-*/
-
-#ifdef UNIX
-#include <stdio.h>
-#define Exit exit
-#else
 #include "syscall.h"
-#endif /* UNIX */
 
-#define SIZE (1024)
-
-int A[SIZE];	/* size of physical memory; with code, we'll run out of space!*/
-
-int
-main()
+int main()
 {
-    int i, j, tmp;
-
-    /* first initialize the array, in reverse sorted order */
-    for (i = 0; i < SIZE; i++) {
-        A[i] = (SIZE-1) - i;
+    int A[10];
+    int size;
+    int i, j, temp, code;
+    PrintString("Nhap size: (<=100)");
+    size = ReadNum();
+    //Nhap mang
+    for (i = 0; i < size; i++)
+    {
+        PrintString("Nhap A[");
+        PrintNum(i + 1);
+        PrintString("]=");
+        A[i] = ReadNum();
     }
-
-    /* then sort! */
-    for (i = 0; i < SIZE; i++) {
-        for (j = 0; j < (SIZE-1); j++) {
-	   if (A[j] > A[j + 1]) {	/* out of order -> need to swap ! */
-	      tmp = A[j];
-	      A[j] = A[j + 1];
-	      A[j + 1] = tmp;
-    	   }
+    //Sap xep
+    PrintString("Go 1: Sap xep Tang dan !!!\nGo 2: Sap xep Giam dan !!!\n");
+    code = ReadNum();
+    if (code == 1)
+    {
+        for (i = 0; i < size - 1; i++)
+        {
+            for (j = i + 1; j < size; j++)
+            {
+                if (A[i] > A[j])
+                {
+                    temp = A[j];
+                    A[j] = A[i];
+                    A[i] = temp;
+                }
+            }
+        }
+    }
+    else
+    {
+        for (i = 0; i < size - 1; i++)
+        {
+            for (j = i + 1; j < size; j++)
+            {
+                if (A[i] < A[j])
+                {
+                    temp = A[j];
+                    A[j] = A[i];
+                    A[i] = temp;
+                }
+            }
         }
     }
 
-#ifdef UNIX_DEBUG
-    for (i=0; i<SIZE; i++) {
-        printf("%4d ", A[i]);
-	if (((i+1) % 15) == 0) {
-		printf("\n");
-        }
-        if (A[i] != i) {
-            fprintf(stderr, "Out of order A[%d] = %d\n", i, A[i]);
-            Exit(1);
-        }   
+    //Xuat mang
+    for (i = 0; i < size; i++)
+    {
+        PrintString("A[");
+        PrintNum(i + 1);
+        PrintString("]=");
+        PrintNum(A[i]);
+        PrintChar('\n');
     }
-    printf("\n");
-#endif /* UNIX_DEBUG */
-
-    for (i=0; i<SIZE; i++) {
-        if (A[i] != i) {
-            Exit(1);
-        }   
-    }
-
-    Exit(0);
+    PrintChar('\n');
+    Halt();
+    /* not reached */
 }
