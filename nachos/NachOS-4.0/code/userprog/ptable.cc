@@ -15,13 +15,14 @@ PTable::PTable()
     bm->Mark(0);
 
     pcb[0] = new PCB(0);
+    psize = MAXPROCESS;
 }
 
 PTable::PTable(int size)
 {
     psize = size;
     bm = new Bitmap(size);
-    bmsem = new Semaphore("BMsem", 1);
+    bmsem = new Semaphore("bmsem", 1);
 
     for (int i = 0; i < MAXPROCESS; ++i)
         pcb[i] = NULL;

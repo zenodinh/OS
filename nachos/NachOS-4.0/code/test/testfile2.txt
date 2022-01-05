@@ -1,1 +1,0 @@
-Test cac ham Read, Write, Open, Create, Close

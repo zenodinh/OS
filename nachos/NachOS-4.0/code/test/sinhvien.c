@@ -38,7 +38,6 @@ void WriteSV(int SVIndex, int fileID)
 
 int main()
 {
-
     // So lit con lai can phai rot cua sinh vien
     int LitConLai;
     // STT cua sinh vien
@@ -48,34 +47,32 @@ int main()
     // OpenfileID cua file
     int fileID;
     // Ten tap tin can xuat ket qua la "../test/output.txt"
-    Wait("lock");
+    SVIndex = GetProcessID();
     LitConLai = 10; // Ban dau sinh vien chua rot nuoc
     fileID = Open("../test/output.txt", ReadAndWrite);
-    if (fileID == -1)
+    if (fileID < 2 || fileID > 9)
     {
         PrintString("Khong mo duoc file output.txt!!\n");
         return 0;
     }
+    Seek(0, fileID);
     while (LitConLai > 0)
     {
-        SVIndex = GetProcessID();
-        fLength = GetFileLength(fileID);
-        if (fLength >= 0)
-        {
-            if (Seek(fLength, fileID) == -1)
-            {
-                PrintString("Loi khong the seek toi vi tri moi!!\n");
-                return 0;
-            }
-            PrintNum(SVIndex);
-            PrintString(", ");
-            WriteSV(SVIndex, fileID);
-            Write(", ", 5, fileID);
-        }
+        Wait("lock");
         --LitConLai;
+        fLength = GetFileLength(fileID);
+        Seek(fLength, fileID);
+        if (fLength != 0)
+            Write(", ", 5, fileID);
+        PrintNum(SVIndex);
+        PrintString(", ");
+        WriteSV(SVIndex, fileID);
+
+        Signal("lock"); // Up <=> active
     }
-    Signal("lock"); // Up <=> active
+
     Close(fileID);
     Signal("main");
+
     return 0;
 }

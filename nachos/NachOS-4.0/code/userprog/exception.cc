@@ -248,30 +248,26 @@ void ExceptionHandler(ExceptionType which)
 		}
 		case SC_Open:
 		{
-			int filenameMaxLength;
 			char *filename;
 			int freeSlot;
 
 			int virtAddr = kernel->machine->ReadRegister(4);
 			int type = kernel->machine->ReadRegister(5);
-			filenameMaxLength = 30;
+			int filenameMaxLength = 30;
 			// Chuyen du lieu tu user space sang kernel space
 			filename = User2Kernel(virtAddr, filenameMaxLength + 1);
 			// Kiem tra con vi tri trong cua bang mo ta fileTable de them vao
 			freeSlot = kernel->fileSystem->FindFreeSlot();
 
-			if (freeSlot != -1) // fileTable con slot trong thi mo thuc thi tiep
+			if (freeSlot > 1 && freeSlot < 10) // fileTable con slot trong thi mo thuc thi tiep
 			{
 				// Kiem tra kieu file muon thuc thi co thuoc loai chi doc hoac doc va ghi khong
 				if (type == OnlyRead || type == ReadAndWrite)
 				{
-
 					// Mo file va them vao bang mo ta fileTable
-					if ((kernel->fileSystem->fileTable[freeSlot] = kernel->fileSystem->Open(filename, type)) != NULL)
-					{
+					kernel->fileSystem->fileTable[freeSlot] = kernel->fileSystem->Open(filename, type);
+					if (kernel->fileSystem->fileTable[freeSlot] != NULL)
 						kernel->machine->WriteRegister(2, freeSlot);
-						printf("free slot = %d,\t", freeSlot);
-					}
 				}
 				else if (type == 2) // Quy uoc la stdin
 					kernel->machine->WriteRegister(2, InputConsoleIn);
@@ -327,7 +323,7 @@ void ExceptionHandler(ExceptionType which)
 			// Kiem tra id cua file phai nam trong bang mo ta file
 			if (id < 0 || id > 9)
 			{
-				printf("\nKhong the truy cap file vi id nam ngoai bang mo ta.\n");
+				printf("\nLoi Read: Khong the truy cap file vi id = %d nam ngoai bang mo ta.\n", id);
 				kernel->machine->WriteRegister(2, -1);
 				IncreaseCounter();
 				return;
@@ -337,7 +333,7 @@ void ExceptionHandler(ExceptionType which)
 			// Truong hop doc du lieu tu Ouput console thi loi
 			if (id == OutputConsoleOut)
 			{
-				printf("\nKhong the doc du lieu tu STDOUT (console ouput)\n");
+				printf("\nLoi Read: Khong the doc du lieu tu STDOUT (console ouput)\n");
 				kernel->machine->WriteRegister(2, -1);
 				IncreaseCounter();
 				return;
@@ -368,7 +364,7 @@ void ExceptionHandler(ExceptionType which)
 			// Truong hop tap tin tai vi tri id khong co
 			if (kernel->fileSystem->fileTable[id] == NULL)
 			{
-				printf("\nTap tin khong ton tai");
+				printf("\nLoi Read: Tap tin khong ton tai");
 				kernel->machine->WriteRegister(2, -1);
 				IncreaseCounter();
 				return;
@@ -413,7 +409,7 @@ void ExceptionHandler(ExceptionType which)
 			// Kiem tra id cua file phai nam trong bang mo ta file
 			if (id < 0 || id > 9)
 			{
-				printf("\nKhong the truy cap file vi id nam ngoai bang mo ta.\n");
+				printf("\nLoi Write: Khong the truy cap file vi id = %d nam ngoai bang mo ta.\n", id);
 				kernel->machine->WriteRegister(2, -1);
 				IncreaseCounter();
 				return;
@@ -482,25 +478,22 @@ void ExceptionHandler(ExceptionType which)
 		}
 		case SC_Exec:
 		{
-			char *name;
 			int maxLength = 30;
-			OpenFile *file;
-			int result;
 			int virtAddr = kernel->machine->ReadRegister(4);
-			name = User2Kernel(virtAddr, maxLength);
+			char *name = User2Kernel(virtAddr, maxLength);
 			if (name == "") // Truong hop name khong hop le
 			{
-				printf("Loi: Ten chuong trinh truyen vao rong!!\n");
+				printf("Loi Exec: Ten chuong trinh truyen vao rong!!\n");
 				kernel->machine->WriteRegister(2, -1);
 				IncreaseCounter();
 				return;
 				ASSERTNOTREACHED();
 				break;
 			}
-			file = kernel->fileSystem->Open(name);
+			OpenFile *file = kernel->fileSystem->Open(name);
 			if (file == NULL) // Truong hop khong mo duoc file
 			{
-				printf("Loi: Khong the mo duoc file!!\n");
+				printf("Loi Exec: Khong the mo duoc file!!\n");
 				kernel->machine->WriteRegister(2, -1);
 				IncreaseCounter();
 				return;
@@ -508,7 +501,7 @@ void ExceptionHandler(ExceptionType which)
 				break;
 			}
 			// Truong hop nay da mo duoc file
-			result = kernel->pTab->ExecUpdate(name);
+			int result = kernel->pTab->ExecUpdate(name);
 			kernel->machine->WriteRegister(2, result);
 			delete[] name;
 
@@ -544,8 +537,8 @@ void ExceptionHandler(ExceptionType which)
 			// Goi ham cap nhat exit
 			int result = kernel->pTab->ExitUpdate(exitStatus);
 			// Giai phong chuong trinh khi ket thuc ham
-			kernel->currentThread->FreeSpace();
-			kernel->currentThread->Finish();
+			// kernel->currentThread->FreeSpace();
+			// kernel->currentThread->Finish();
 			IncreaseCounter();
 			return;
 			ASSERTNOTREACHED();
@@ -565,8 +558,8 @@ void ExceptionHandler(ExceptionType which)
 
 			if (name == NULL)
 			{
-				DEBUG('a', "\n Not enough memory in System");
-				printf("\n Not enough memory in System");
+				DEBUG('a', "\nNot enough memory in System");
+				printf("\nNot enough memory in System");
 				kernel->machine->WriteRegister(2, -1);
 				delete[] name;
 				IncreaseCounter();
@@ -577,8 +570,8 @@ void ExceptionHandler(ExceptionType which)
 
 			if (res == -1)
 			{
-				DEBUG('a', "\n Khong the khoi tao semaphore");
-				printf("\n Khong the khoi tao semaphore");
+				DEBUG('a', "\nKhong the khoi tao semaphore");
+				printf("\nKhong the khoi tao semaphore");
 				kernel->machine->WriteRegister(2, -1);
 				delete[] name;
 				IncreaseCounter();
@@ -602,8 +595,8 @@ void ExceptionHandler(ExceptionType which)
 			// Check name is available
 			if (name == NULL)
 			{
-				DEBUG('a', "\n Not enough memory in System");
-				printf("\n Not enough memory in System");
+				DEBUG('a', "\nNot enough memory in System");
+				printf("\nNot enough memory in System");
 				kernel->machine->WriteRegister(2, -1);
 				delete[] name;
 				IncreaseCounter();
@@ -614,8 +607,8 @@ void ExceptionHandler(ExceptionType which)
 			int check = kernel->semTab->Wait(name);
 			if (check == -1)
 			{
-				DEBUG('a', "\n Khong ton tai ten semaphore nay!");
-				printf("\n Khong ton tai ten semaphore nay!");
+				DEBUG('a', "\nKhong ton tai ten semaphore nay!");
+				printf("\nLoi Wait: Khong ton tai ten semaphore nay!");
 				kernel->machine->WriteRegister(2, -1);
 				delete[] name;
 				IncreaseCounter();
@@ -639,8 +632,8 @@ void ExceptionHandler(ExceptionType which)
 			// Check name is available
 			if (name == NULL)
 			{
-				DEBUG('a', "\n Not enough memory in System");
-				printf("\n Not enough memory in System");
+				DEBUG('a', "\nNot enough memory in System");
+				printf("\nNot enough memory in System");
 				kernel->machine->WriteRegister(2, -1);
 				delete[] name;
 				IncreaseCounter();
@@ -651,8 +644,8 @@ void ExceptionHandler(ExceptionType which)
 			int check = kernel->semTab->Signal(name);
 			if (check == -1)
 			{
-				DEBUG('a', "\n Khong ton tai ten semaphore nay!");
-				printf("\n Khong ton tai ten semaphore nay!");
+				DEBUG('a', "\nKhong ton tai ten semaphore nay!");
+				printf("\nKhong ton tai ten semaphore nay!");
 				kernel->machine->WriteRegister(2, -1);
 				delete[] name;
 				IncreaseCounter();
@@ -676,7 +669,7 @@ void ExceptionHandler(ExceptionType which)
 			//TODO: Kiem tra id co hop le khong
 			if (id < 0 || id > 9) // id hop le: 0 -> 9
 			{
-				printf("\nLoi seek: ID nam ngoai pham vi hop le!!\n");
+				printf("\nLoi seek: id = %d nam ngoai pham vi hop le!!\n", id);
 				kernel->machine->WriteRegister(2, -1);
 
 				IncreaseCounter();
@@ -687,7 +680,7 @@ void ExceptionHandler(ExceptionType which)
 			//TODO: Kiem tra voi id nay co mo file duoc khong
 			if (kernel->fileSystem->fileTable[id] == NULL)
 			{
-				printf("\nLoi seek: file co id: %d khong ton tai!!\n", id);
+				printf("\nLoi seek: file co id = %d khong ton tai!!\n", id);
 				kernel->machine->WriteRegister(2, -1);
 
 				IncreaseCounter();
@@ -736,13 +729,14 @@ void ExceptionHandler(ExceptionType which)
 		{
 			//** Input: file ID (id cua file dang mo)
 			//** Output: -1 neu that bai, kich thuoc file neu thanh cong
-
+			char tempChar;
+			int fileLength = 0;
 			int fid = (int)kernel->machine->ReadRegister(4); // Doc id cua file tu thanh ghi r4
-			printf("id = %d\n", fid);
+
 			// Do bang fileTable chi quan ly 10 file (bao gom ca STDIN va STDOUT)
-			if (fid < 0 || fid > 9)
+			if (fid < 2 || fid > 9)
 			{
-				printf("Loi getFileLength: id nam ngoai bang fileTable!!\n");
+				printf("Loi getFileLength: id = %d nam ngoai bang fileTable!!\n", fid);
 				IncreaseCounter();
 				return;
 				ASSERTNOTREACHED();
@@ -762,8 +756,6 @@ void ExceptionHandler(ExceptionType which)
 			// Ta phai dua con tro ve 0 de bat dau duyet file
 			kernel->fileSystem->fileTable[fid]->Seek(0);
 
-			char tempChar;
-			int fileLength = 0;
 			/* Do ta khong biet chinh xac do dai cua file nen
 			* doc tung ki tu co trong file vao tempChar
 			* cap nhat so luong vao fileLength

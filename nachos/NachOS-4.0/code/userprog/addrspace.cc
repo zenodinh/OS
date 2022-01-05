@@ -54,6 +54,13 @@ SwapHeader(NoffHeader *noffH)
 #endif
 }
 
+int numFreeSlot()
+{
+    if (kernel->pTab->GetFreeSlot() == -1)
+        return -1;
+    return kernel->gPhysPageBitMap->NumClear();
+}
+
 //----------------------------------------------------------------------
 // AddrSpace::AddrSpace
 // 	Create an address space to run a user program.
@@ -120,7 +127,7 @@ AddrSpace::AddrSpace(char *filename)
 
     int numclear = kernel->gPhysPageBitMap->NumClear();
 
-    // printf("\n\nSize: %d | numPages: %d | PageSize: %d | Numclear: %d\n\n", size, numPages, PageSize, numclear);
+    //printf("\n\nSize: %d | numPages: %d | PageSize: %d | Numclear: %d\n\n", size, numPages, PageSize, numclear);
 
     if (numPages > numclear)
     {
@@ -143,7 +150,7 @@ AddrSpace::AddrSpace(char *filename)
         pageTable[i].readOnly = FALSE; // if the code segment was entirely on
                                        // a separate page, we could set its
                                        // pages to be read-only
-        // printf("Physic Pages %d \n", pageTable[i].physicalPage);
+        //printf("Physic Pages %d \n", pageTable[i].physicalPage);
     }
     kernel->addrLock->V();
 
@@ -183,6 +190,9 @@ AddrSpace::AddrSpace(char *filename)
 
 AddrSpace::~AddrSpace()
 {
+    for (int i = 0; i < numPages; i++)
+        kernel->gPhysPageBitMap->Clear(pageTable[i].physicalPage);
+
     delete pageTable;
 }
 
@@ -196,77 +206,75 @@ AddrSpace::~AddrSpace()
 //	"fileName" is the file containing the object code to load into memory
 //----------------------------------------------------------------------
 
-bool AddrSpace::Load(char *fileName)
+bool 
+AddrSpace::Load(char *fileName) 
 {
     OpenFile *executable = kernel->fileSystem->Open(fileName);
     NoffHeader noffH;
     unsigned int size;
 
-    if (executable == NULL)
-    {
-        cerr << "Unable to open file " << fileName << "\n";
-        return FALSE;
+    if (executable == NULL) {
+    cerr << "Unable to open file " << fileName << "\n";
+    return FALSE;
     }
 
     executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
-    if ((noffH.noffMagic != NOFFMAGIC) &&
+    if ((noffH.noffMagic != NOFFMAGIC) && 
         (WordToHost(noffH.noffMagic) == NOFFMAGIC))
         SwapHeader(&noffH);
     ASSERT(noffH.noffMagic == NOFFMAGIC);
 
 #ifdef RDATA
-    // how big is address space?
+// how big is address space?
     size = noffH.code.size + noffH.readonlyData.size + noffH.initData.size +
-           noffH.uninitData.size + UserStackSize;
-    // we need to increase the size
-    // to leave room for the stack
+           noffH.uninitData.size + UserStackSize;    
+                                                // we need to increase the size
+                        // to leave room for the stack
 #else
-                                                                                          // how big is address space?
-    size = noffH.code.size + noffH.initData.size + noffH.uninitData.size + UserStackSize; // we need to increase the size
-                                                                                          // to leave room for the stack
+// how big is address space?
+    size = noffH.code.size + noffH.initData.size + noffH.uninitData.size 
+            + UserStackSize;    // we need to increase the size
+                        // to leave room for the stack
 #endif
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
 
-    ASSERT(numPages <= NumPhysPages); // check we're not trying
-                                      // to run anything too big --
-                                      // at least until we have
-                                      // virtual memory
+    ASSERT(numPages <= NumPhysPages);        // check we're not trying
+                        // to run anything too big --
+                        // at least until we have
+                        // virtual memory
 
     DEBUG(dbgAddr, "Initializing address space: " << numPages << ", " << size);
 
-    // then, copy in the code and data segments into memory
-    // Note: this code assumes that virtual address = physical address
-    if (noffH.code.size > 0)
-    {
+// then, copy in the code and data segments into memory
+// Note: this code assumes that virtual address = physical address
+    if (noffH.code.size > 0) {
         DEBUG(dbgAddr, "Initializing code segment.");
-        DEBUG(dbgAddr, noffH.code.virtualAddr << ", " << noffH.code.size);
+    DEBUG(dbgAddr, noffH.code.virtualAddr << ", " << noffH.code.size);
         executable->ReadAt(
-            &(kernel->machine->mainMemory[noffH.code.virtualAddr]),
+        &(kernel->machine->mainMemory[noffH.code.virtualAddr]), 
             noffH.code.size, noffH.code.inFileAddr);
     }
-    if (noffH.initData.size > 0)
-    {
+    if (noffH.initData.size > 0) {
         DEBUG(dbgAddr, "Initializing data segment.");
-        DEBUG(dbgAddr, noffH.initData.virtualAddr << ", " << noffH.initData.size);
+    DEBUG(dbgAddr, noffH.initData.virtualAddr << ", " << noffH.initData.size);
         executable->ReadAt(
-            &(kernel->machine->mainMemory[noffH.initData.virtualAddr]),
+        &(kernel->machine->mainMemory[noffH.initData.virtualAddr]),
             noffH.initData.size, noffH.initData.inFileAddr);
     }
 
 #ifdef RDATA
-    if (noffH.readonlyData.size > 0)
-    {
+    if (noffH.readonlyData.size > 0) {
         DEBUG(dbgAddr, "Initializing read only data segment.");
-        DEBUG(dbgAddr, noffH.readonlyData.virtualAddr << ", " << noffH.readonlyData.size);
+    DEBUG(dbgAddr, noffH.readonlyData.virtualAddr << ", " << noffH.readonlyData.size);
         executable->ReadAt(
-            &(kernel->machine->mainMemory[noffH.readonlyData.virtualAddr]),
+        &(kernel->machine->mainMemory[noffH.readonlyData.virtualAddr]),
             noffH.readonlyData.size, noffH.readonlyData.inFileAddr);
     }
 #endif
 
-    delete executable; // close file
-    return TRUE;       // success
+    delete executable;            // close file
+    return TRUE;            // success
 }
 
 //----------------------------------------------------------------------

@@ -8,7 +8,7 @@ int main()
 	int f_Success;										 // Bien co dung de kiem tra thanh cong
 	SpaceId si_input, si_output, si_sinhvien, si_result; // Bien id cho file
 	int SLTD;											 // So luong thoi diem xem xet (dong dau tien trong file)
-	char c_readFile;									 // Bien ki tu luu ki tu doc tu file
+	char c_readFile, readResult;						 // Bien ki tu luu ki tu doc tu file
 
 	//-----------------------------------------------------------
 	// Khoi tao 4 Semaphore de quan ly 3 tien trinh
@@ -25,18 +25,18 @@ int main()
 	if (f_Success == -1)
 		return 1;
 
-	// Tao file output.txt de ghi ket qua cuoi cung
-	f_Success = CreateFile("output.txt");
-	if (f_Success == -1)
-		return 1;
-
 	// Mo file input.txt chi de doc
-	si_input = Open("input.txt", OnlyRead);
+	si_input = Open("../test/input.txt", OnlyRead);
 	if (si_input == -1)
 		return 1;
 
+	// Tao file output.txt de ghi ket qua cuoi cung
+	f_Success = Create("../test/output.txt");
+	if (f_Success == -1)
+		return 1;
+
 	// Mo file output.txt de doc va ghi
-	si_output = Open("output.txt", ReadAndWrite);
+	si_output = Open("../test/output.txt", ReadAndWrite);
 	if (si_output == -1)
 	{
 		Close(si_input);
@@ -48,16 +48,21 @@ int main()
 	SLTD = 0;
 	while (1)
 	{
-
-		if (Read(&c_readFile, 1, si_input) == 1)
-		{
-			if (c_readFile >= '0' && c_readFile <= '9')
-				SLTD = SLTD * 10 + (c_readFile - 48);
-		}
-		else
+		readResult = Read(&c_readFile, 1, si_input);
+		if (readResult == -2 || readResult == -1)
 			break;
+		if (c_readFile >= '0' && c_readFile <= '9')
+			SLTD = SLTD * 10 + (c_readFile - 48);
 	}
-
+	// Tao file sinhvien.txt
+	f_Success = Create("../test/sinhvien.txt");
+	if (f_Success == -1)
+	{
+		Close(si_input);
+		Close(si_output);
+		return 1;
+	}
+	PrintString("Nhay vao chuong trinh sinhvien\n");
 	// Goi thuc thi tien trinh sinhvien trong file Sv.c
 	f_Success = Exec("../test/Sv");
 	if (f_Success == -1)
@@ -66,7 +71,7 @@ int main()
 		Close(si_output);
 		return 1;
 	}
-
+	PrintString("Nhay vao chuong trinh voinuoc\n");
 	// Goi thuc thi tien trinh voinuoc trong file Vn.c
 	f_Success = Exec("../test/Vn");
 	if (f_Success == -1)
@@ -79,17 +84,8 @@ int main()
 	// Thuc hien xu ly khi nao het thoi diem xet thi thoi
 	while (SLTD--)
 	{
-		// Tao file sinhvien.txt
-		f_Success = CreateFile("sinhvien.txt");
-		if (f_Success == -1)
-		{
-			Close(si_input);
-			Close(si_output);
-			return 1;
-		}
-
 		// Mo file sinhvien.txt de ghi tung dong sinhvien tu file input.txt
-		si_sinhvien = Open("sinhvien.txt", 0);
+		si_sinhvien = Open("../test/sinhvien.txt", ReadAndWrite);
 		if (si_sinhvien == -1)
 		{
 			Close(si_input);
@@ -98,13 +94,11 @@ int main()
 		}
 		while (1)
 		{
-			if (Read(&c_readFile, 1, si_input) == 1) // Doc toi cuoi file
-			{
-				if (c_readFile != '\n')
-					Write(&c_readFile, 1, si_sinhvien);
-			}
-			else
+			readResult = Read(&c_readFile, 1, si_input);
+			if (readResult == -2 || readResult == -1)
 				break;
+			if (c_readFile != '\n')
+				Write(&c_readFile, 1, si_sinhvien);
 		}
 		// Dong file sinhvien.txt lai
 		Close(si_sinhvien);
@@ -116,16 +110,16 @@ int main()
 		Wait("main");
 
 		// Thuc hien doc file tu vn_output va ghi ket qua vao file output.txt
-		si_result = Open("vn_output.txt", OnlyRead);
+		si_result = Open("../test/vn_output.txt", OnlyRead);
 		if (si_result == -1)
 		{
 			Close(si_input);
 			Close(si_output);
-			return 0;
+			return 1;
 		}
 
 		PrintString("\n Lan thu: ");
-		PrintInt(SLTD);
+		PrintNum(SLTD);
 		PrintString("\n");
 		// Doc cac voi vao output.txt
 		while (1)

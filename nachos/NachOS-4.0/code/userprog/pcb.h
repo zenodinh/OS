@@ -19,7 +19,6 @@ private:
     Thread *thread; // Tien trinh cua chuong trinh
 public:
     int parentID; // ID của tiến trình cha
-    PCB();        // contructor
     PCB(int id);
     ~PCB(); // deconstructor
     // nạp chương trình có tên lưu trong biến filename và processID là pid

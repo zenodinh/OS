@@ -11,7 +11,7 @@ int main()
     char temp;  // Bien tam
     int readResult;
     int SinhVien[MAX_STUDENTS_IN]; // Khai bao so vien vien toi da = 5
-    SLSV = 0;
+    
     // Kiem tra mo file input.txt
     fileID = Open("../test/input.txt", OnlyRead);
     if (fileID == -1)
@@ -20,6 +20,7 @@ int main()
         return 0;
     }
     //TODO: Doc so luong sinh vien
+    SLSV = 0;
     while (1)
     {
         readResult = Read(&temp, 1, fileID);
@@ -49,7 +50,7 @@ int main()
         return 0;
     }
     //TODO: Tao 2 semaphore
-    CreateSemaphore("main", 1);
+    CreateSemaphore("main", 0);
     CreateSemaphore("lock", 1);
 
     for (i = 0; i < SLSV; ++i)
@@ -58,11 +59,10 @@ int main()
     while (temp > 0)
     {
         Wait("main");
-        Join(SinhVien[temp]);
         --temp;
     }
-    // for (i = 0; i < SLSV; ++i)
-        
+    for (i = 0; i < SLSV; ++i)
+        Join(SinhVien[temp]);
     Close(fileID);
     return 1;
 }

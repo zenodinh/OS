@@ -11,7 +11,10 @@ void main()
 	int outputSuccess;		   // Bien co luu dau hieu doc xong file vn_output
 
 	//-----------------------------------------------------------
-	voi1 = voi2 = DungTichNuoc = outputSuccess = 0;
+	voi1 = 0;
+	voi2 = 0;
+	DungTichNuoc = 0;
+	outputSuccess = 0;
 	// Xu ly voi nuoc
 	while (1)
 	{

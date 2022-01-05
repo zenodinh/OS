@@ -93,6 +93,19 @@ public:
 		return TRUE;
 	}
 
+	//Ham tim slot trong
+	int FindFreeSlot()
+	{
+		int i;
+		for (i = 2; i < 10; ++i)
+		{
+			if (fileTable[i] == NULL)
+				{
+					return (i > 1 && i < 10) ? i : -1;
+				}
+		}
+		return -1;
+	}
 	OpenFile *Open(char *name)
 	{
 		int fileDescriptor = OpenForReadWrite(name, FALSE);
@@ -110,19 +123,6 @@ public:
 		if (fileDescriptor == -1)
 			return NULL;
 		return new OpenFile(fileDescriptor, type);
-	}
-
-	//Ham tim slot trong
-	int FindFreeSlot()
-	{
-		int i;
-		i = 0;
-		for (i = 2; i < 10; i++)
-		{
-			if (fileTable[i] == NULL)
-				return i;
-		}
-		return -1;
 	}
 
 	bool Remove(char *name) { return Unlink(name) == 0; }
