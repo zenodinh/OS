@@ -9,7 +9,7 @@ int main()
     int resultCode;
     int type;
     PrintString("Vui long nhap ten file va duong dan\n");
-    PrintString("Vi du: ../test/filename.txt\n");
+    PrintString("Vi du: filename.txt\n");
     PrintString("Vui long nhap ten file va duong dan muon create (do dai toi da la 50): ");
     ReadString(filename, 100);
     resultCode = Create(filename);
@@ -20,7 +20,10 @@ int main()
         id = Open(filename, type);
         if (id > 1)
         {
-            PrintString("Nhap chuoi muon them vao file: ");
+            PrintString("Nhap chuoi 1 muon them vao file: ");
+            ReadString(writeString, 100);
+            resultCode = Write(writeString, 100, id);
+            PrintString("Nhap chuoi 2 muon them vao file: ");
             ReadString(writeString, 100);
             resultCode = Write(writeString, 100, id);
             resultCode = Close(id);
@@ -40,7 +43,6 @@ int main()
         else
             PrintString("\nClose file that bai\n");
     }
-
     Halt();
     /* not reached */
 }

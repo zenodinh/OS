@@ -253,7 +253,7 @@ void ExceptionHandler(ExceptionType which)
 
 			int virtAddr = kernel->machine->ReadRegister(4);
 			int type = kernel->machine->ReadRegister(5);
-			int filenameMaxLength = 30;
+			int filenameMaxLength = 32;
 			// Chuyen du lieu tu user space sang kernel space
 			filename = User2Kernel(virtAddr, filenameMaxLength + 1);
 			// Kiem tra con vi tri trong cua bang mo ta fileTable de them vao
@@ -440,14 +440,14 @@ void ExceptionHandler(ExceptionType which)
 			}
 			if (kernel->fileSystem->fileTable[id] == NULL)
 			{
-				printf("\nTap tin khong ton tai");
+				printf("\nLoi Write: Tap tin id = %d khong ton tai", id);
 				kernel->machine->WriteRegister(2, -1);
 				IncreaseCounter();
 				return;
 			}
 			if (kernel->fileSystem->fileTable[id]->type == OnlyRead)
 			{
-				printf("\nKhong the ghi du lieu vao tap tin chi doc");
+				printf("\nLoi Write: Khong the ghi du lieu vao tap tin chi doc");
 				kernel->machine->WriteRegister(2, -1);
 				IncreaseCounter();
 				return;
@@ -481,9 +481,9 @@ void ExceptionHandler(ExceptionType which)
 			int maxLength = 30;
 			int virtAddr = kernel->machine->ReadRegister(4);
 			char *name = User2Kernel(virtAddr, maxLength);
-			if (name == "") // Truong hop name khong hop le
+			if (name == NULL) // Truong hop name khong hop le
 			{
-				printf("Loi Exec: Ten chuong trinh truyen vao rong!!\n");
+				printf("Loi Exec: Khong du bo nho!!\n");
 				kernel->machine->WriteRegister(2, -1);
 				IncreaseCounter();
 				return;
@@ -502,9 +502,10 @@ void ExceptionHandler(ExceptionType which)
 			}
 			// Truong hop nay da mo duoc file
 			int result = kernel->pTab->ExecUpdate(name);
+			// printf("result = %d\n", result);
 			kernel->machine->WriteRegister(2, result);
 			delete[] name;
-
+			delete file;
 			IncreaseCounter();
 			return;
 			ASSERTNOTREACHED();
@@ -526,13 +527,13 @@ void ExceptionHandler(ExceptionType which)
 		{
 			int exitStatus = kernel->machine->ReadRegister(4);
 			// Truong hop exitStatus != 0 nghia la chuong trinh bi loi
-			if (exitStatus != 0)
-			{
-				IncreaseCounter();
-				return;
-				ASSERTNOTREACHED();
-				break;
-			}
+			// if (exitStatus != 0)
+			// {
+			// 	IncreaseCounter();
+			// 	return;
+			// 	ASSERTNOTREACHED();
+			// 	break;
+			// }
 			// Truong hop chuong trinh hoan thanh thanh cong
 			// Goi ham cap nhat exit
 			int result = kernel->pTab->ExitUpdate(exitStatus);

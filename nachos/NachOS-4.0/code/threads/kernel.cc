@@ -125,7 +125,7 @@ void Kernel::Initialize()
     postOfficeOut = new PostOfficeOutput(reliability);
 
     // Khoi tao bien cho kernel
-    addrLock = new Semaphore("addrLock", 1);
+    addrLock = new Semaphore("addrlock", 1);
     gPhysPageBitMap = new Bitmap(256);
     pTab = new PTable(10);
     semTab = new STable();

@@ -52,7 +52,7 @@ int PTable::ExecUpdate(char *name)
                 // Kiem tra name co hop le khong
     if (name == NULL)
     {
-        bmsem->V();
+        bmsem->V(); // Tra lai mien gang cho tien trinh khac
         return -1;
     }
     //Kiem tra chuong trinh co goi thuc thi chinh no khong
@@ -104,6 +104,8 @@ int PTable::ExitUpdate(int ec)
 
     pcb[pID]->JoinRelease();
     pcb[pID]->ExitWait();
+
+    printf("\nTien trinh %d duoc xoa khoa tien trinh cha la %d\n", pID, parID);
     Remove(pID);
 
     return ec;
@@ -126,7 +128,7 @@ int PTable::JoinUpdate(int pID)
     //kiem tra tien trinh dang chay co la cha cua tien trinh can join hay khong
     if (kernel->currentThread->processID != pcb[pID]->parentID || pcb[pID]->GetID() == kernel->currentThread->processID)
     {
-        printf("\nLoi: Ko duoc phep join vao tien trinh khong phai cha cua no !!!\n");
+        printf("\nLoi JoinUpdate: Ko duoc phep join vao tien trinh khong phai cha cua no !!!\n");
         return -1;
     }
 
@@ -139,7 +141,7 @@ int PTable::JoinUpdate(int pID)
         printf("\nProcess exit with exitcode EC = %d ", ec);
         return -1;
     }
-
+    printf("\nTien trinh %d ket thuc", pID);
     pcb[pID]->ExitRelease(); //cho phep tien trinh con ket thuc
 
     return 0;

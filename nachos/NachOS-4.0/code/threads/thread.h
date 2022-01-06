@@ -94,11 +94,7 @@ public:
   // Cac bien dung cho lab2
   int processID;
   int exitStatus;
-  void FreeSpace()
-  {
-    if (space != 0)
-      delete space;
-  }
+  void FreeSpace();
   // basic thread operations
 
   void Fork(VoidFunctionPtr func, void *arg);

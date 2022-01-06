@@ -211,7 +211,7 @@ int GetProcessID();
 *+ Input: fileId la id fuc file khi Open
 *+ Output: -1 neu that bai, kich thuoc file neu thanh cong
 */
-int GetFileLength(char* filename);
+int GetFileLength(OpenFileId id);
 
 #endif /* IN_ASM */
 

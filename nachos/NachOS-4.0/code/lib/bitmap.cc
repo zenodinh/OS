@@ -189,3 +189,15 @@ Bitmap::SelfTest()
         Clear(i);
     }
 }
+
+void
+Bitmap::FetchFrom(OpenFile *file) 
+{
+    file->ReadAt((char *)map, numWords * sizeof(unsigned), 0);
+}
+
+void
+Bitmap::WriteBack(OpenFile *file)
+{
+   file->WriteAt((char *)map, numWords * sizeof(unsigned), 0);
+}

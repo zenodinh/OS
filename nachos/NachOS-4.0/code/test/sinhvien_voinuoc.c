@@ -5,15 +5,15 @@
 
 int main()
 {
-    int fileID; // Dung de luu lai id cua file sau Open
-    int SLSV;   // So luong sinh vien rot nuoc
-    int i;      // Dung cho ham for
-    char temp;  // Bien tam
-    int readResult;
+    int fileID;     // Dung de luu lai id cua file sau Open
+    int SLSV;       // So luong sinh vien rot nuoc
+    int i;          // Dung cho ham for
+    char temp;      // Bien tam
+    int readResult; // Luu ket qua cua ham read
+    int solitId;
     int SinhVien[MAX_STUDENTS_IN]; // Khai bao so vien vien toi da = 5
-    
     // Kiem tra mo file input.txt
-    fileID = Open("../test/input.txt", OnlyRead);
+    fileID = Open("input.txt", OnlyRead);
     if (fileID == -1)
     {
         PrintString("Tap tin input.txt khong the mo duoc!!\n");
@@ -35,34 +35,39 @@ int main()
         //TODO: Cap nhat so luong sinh vien
         SLSV = SLSV * 10 + ((int)temp - 48);
     }
+    Close(fileID); // Dong file input.txt
+    
+    PrintString("So luong sinh vien: ");
+    PrintNum(SLSV);
+    PrintChar('\n');
+
     //TODO: So luong sinh vien = 1 -> 5
     if (SLSV < 1 || SLSV > 5)
     {
         PrintString("So luong sinh vien vuot muc cho phep!!\n");
-        Close(fileID);
         return 0;
     }
     //TODO: Tao file output.txt de xuat ket qua
-    if (Create("../test/output.txt") == -1)
+    if (Create("output.txt") == -1)
     {
         PrintString("Khong the tao file output.txt!!\n");
-        Close(fileID);
         return 0;
     }
-    //TODO: Tao 2 semaphore
+    // TODO: Tao 2 semaphore
     CreateSemaphore("main", 0);
     CreateSemaphore("lock", 1);
 
     for (i = 0; i < SLSV; ++i)
-        SinhVien[i] = Exec("../test/sinhvien");
-    temp = SLSV;
-    while (temp > 0)
+        SinhVien[i] = Exec("sinhvien");
+    
+    temp = 0;
+    while (temp < SLSV)
     {
         Wait("main");
-        --temp;
+        ++temp;
     }
     for (i = 0; i < SLSV; ++i)
-        Join(SinhVien[temp]);
-    Close(fileID);
+        Join(SinhVien[i]);
+
     return 1;
 }
