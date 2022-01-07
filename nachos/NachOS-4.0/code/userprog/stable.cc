@@ -59,7 +59,7 @@ int STable::Create(char *name, int init)
     // Kiem tra semahore da ton tai hay chua?
     for (int i = 0; i < MAX_SEMAPHORE; ++i)
     {
-        if (bm->Test(i))
+        if (bm->Test(i)) // Co ton tai
         {
             if (strcmp(name, semTab[i]->GetName()) == 0)
                 return -1; // Truong hop da ton tai
@@ -90,7 +90,7 @@ int STable::Wait(char *name)
             }
         }
     }
-    printf("Khong ton tai semaphore\n");
+    printf("Loi STable::Wait: Khong ton tai semaphore = %s!!\n",name);
     return -1;
 }
 
@@ -104,7 +104,7 @@ int STable::Signal(char *name)
                 return 0;
             }
 
-    printf("Khong ton tai semaphore\n");
+    printf("Loi STable::Signal: Khong ton tai semaphore = %s!!\n",name);
     return -1;
 }
 

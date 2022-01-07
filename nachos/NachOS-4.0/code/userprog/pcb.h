@@ -26,7 +26,6 @@ public:
     int GetID();                       // Trả về ProcessID của tiến trình gọi thực hiện
 
     void JoinWait(); // 1. Tiến trình cha đợi tiến trình con kết thúc
-
     void ExitWait(); // 4. Tiến trình con kết thúc
 
     void JoinRelease(); // 2. Báo cho tiến trình cha thực thi tiếp

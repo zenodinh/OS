@@ -121,6 +121,7 @@ void Kernel::Initialize()
 #else
     fileSystem = new FileSystem(formatFlag);
 #endif // FILESYS_STUB
+
     postOfficeIn = new PostOfficeInput(10);
     postOfficeOut = new PostOfficeOutput(reliability);
 

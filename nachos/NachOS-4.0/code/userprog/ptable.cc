@@ -85,50 +85,50 @@ int PTable::ExitUpdate(int ec)
     //Kiem tra pID co ton tai khong
     int pID = kernel->currentThread->processID;
     int parID = pcb[pID]->parentID;
-    if (!IsExist(pID))
-    {
-        printf("\nLoi: Tien trinh khong ton tai !!!\n");
-        return -1;
-    }
-    //////////////////////////////////////////////////////////////
 
     //Neu la main process thi Halt()
     if (pID == 0)
     {
+        printf("Tien trinh main hoan tat\n");
+        kernel->currentThread->FreeSpace();
         kernel->interrupt->Halt();
         return 0;
     }
-    /////////////////////////////////////////////////////////////
 
+    if (!IsExist(pID))
+    {
+        printf("Loi PTable::ExitUpdate: Tien trinh co processID = %d khong ton tai !!\n", pID);
+        return -1;
+    }
     pcb[pID]->SetExitCode(ec);
 
     pcb[pID]->JoinRelease();
     pcb[pID]->ExitWait();
 
-    printf("\nTien trinh %d duoc xoa khoa tien trinh cha la %d\n", pID, parID);
+    printf("Tien trinh %d duoc xoa khoa tien trinh cha la %d\n", pID, parID);
     Remove(pID);
 
-    return ec;
+    return 0;
 }
 
 int PTable::JoinUpdate(int pID)
 {
     if (pID < 0 || pID > 9)
     {
-        printf("\nLoi: Khong ton tai process: id = %d\n", pID);
+        printf("Loi PTable::JoinUpdate: process id = %d nam ngoai pham vi!!\n", pID);
         return -1;
     }
 
     if (pcb[pID] == NULL)
     {
-        printf("Loi: Khong ton tai process id nay!");
+        printf("Loi PTable::JoinUpdate: Khong ton tai pcb voi process id = %d!!", pID);
         return -1;
     }
 
     //kiem tra tien trinh dang chay co la cha cua tien trinh can join hay khong
     if (kernel->currentThread->processID != pcb[pID]->parentID || pcb[pID]->GetID() == kernel->currentThread->processID)
     {
-        printf("\nLoi JoinUpdate: Ko duoc phep join vao tien trinh khong phai cha cua no !!!\n");
+        printf("Loi PTable::JoinUpdate: Ko duoc phep join vao tien trinh khong phai cha cua no !!!\n");
         return -1;
     }
 
@@ -138,13 +138,13 @@ int PTable::JoinUpdate(int pID)
 
     if (ec != 0)
     {
-        printf("\nProcess exit with exitcode EC = %d ", ec);
+        printf("Loi PTable::JoinUpdate: Tien trinh thoat voi EC = %d\n", ec);
         return -1;
     }
-    printf("\nTien trinh %d ket thuc", pID);
+    printf("Tien trinh %d duoc giai phong\n", pID);
     pcb[pID]->ExitRelease(); //cho phep tien trinh con ket thuc
 
-    return 0;
+    return ec;
 }
 
 void PTable::Remove(int pID)
@@ -154,8 +154,17 @@ void PTable::Remove(int pID)
     if (bm->Test(pID))
     {
         bm->Clear(pID);
-        delete pcb[pID];
+        PCB* temp = pcb[pID];
+		pcb[pID] = NULL;
+		delete temp;
     }
+    // bm->Clear(pID);
+	// if(pcb[pID] != NULL)
+	// {
+	// 	PCB* temp = pcb[pID];
+	// 	pcb[pID] = NULL;
+	// 	delete temp;
+	// }
 }
 
 //----------------------------------------------------------------------------------------------
@@ -166,8 +175,8 @@ int PTable::GetFreeSlot()
 
 bool PTable::IsExist(int pID)
 {
-    if (pID < 0 || pID > 9)
-        return 0;
+    // if (pID < 0 || pID > 9)
+    //     return 0;
     return bm->Test(pID);
 }
 

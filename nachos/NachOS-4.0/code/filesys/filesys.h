@@ -82,27 +82,24 @@ public:
 		Close(fileDescriptor);
 		return TRUE;
 	}
-	//Default method
-	bool Create(char *name, int initialSize)
-	{
-		int fileDescriptor = OpenForWrite(name);
+	// //Default method
+	// bool Create(char *name, int initialSize)
+	// {
+	// 	int fileDescriptor = OpenForWrite(name);
 
-		if (fileDescriptor == -1)
-			return FALSE;
-		Close(fileDescriptor);
-		return TRUE;
-	}
+	// 	if (fileDescriptor == -1)
+	// 		return FALSE;
+	// 	Close(fileDescriptor);
+	// 	return TRUE;
+	// }
 
 	//Ham tim slot trong
 	int FindFreeSlot()
 	{
-		int i;
-		for (i = 2; i < 10; ++i)
+		for (int i = 2; i < 10; ++i)
 		{
 			if (fileTable[i] == NULL)
-				{
-					return (i > 1 && i < 10) ? i : -1;
-				}
+				return i;
 		}
 		return -1;
 	}
