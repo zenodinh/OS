@@ -280,9 +280,10 @@ void ExceptionHandler(ExceptionType which)
 			// Kiem tra id phai thuoc bang mo ta fileTable va tap tin co ton tai khong
 			if (id >= 0 && id < 10 && kernel->fileSystem->fileTable[id] != NULL)
 			{
-				// Ta goi ham close trong lop fileSystem de giup dong file
-				int result = kernel->fileSystem->Close(id);
-				kernel->machine->WriteRegister(2, result);
+				// Ta xoa file co trong fileTable tai vi tri id
+				delete kernel->fileSystem->fileTable[id];
+				kernel->fileSystem->fileTable[id] = NULL;
+				kernel->machine->WriteRegister(2, 0); // Tra ve 0 khi thanh cong
 				IncreaseCounter();
 				return;
 				ASSERTNOTREACHED();
@@ -458,7 +459,7 @@ void ExceptionHandler(ExceptionType which)
 				// Sau khi ghi xong thi ta phai tra buffer ve lai user space
 				kernel2user(virtAddr, realSize, buffer);
 				kernel->machine->WriteRegister(2, realSize);
-				
+
 				delete[] buffer;
 				IncreaseCounter();
 				return;

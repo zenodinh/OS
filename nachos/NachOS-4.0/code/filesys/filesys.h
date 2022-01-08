@@ -83,14 +83,6 @@ class FileSystem {
 			fileTable[slot]  = new OpenFile(fileDescriptor, type);
 		return slot;
 	}
-	// Dung de dong file voi id cho truoc
-	int Close(int id){
-		if (id < 0 || id > 9 || fileTable[id] == NULL) return -1;
-		delete fileTable[id];
-		fileTable[id] = NULL;
-		return 0;
-	}
-
     bool Remove(char *name) { return Unlink(name) == 0; }
 	private:
 	// Tim vi tri con trong trong bang fileTable

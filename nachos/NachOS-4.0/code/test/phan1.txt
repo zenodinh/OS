@@ -1,0 +1,1 @@
+kiem tra phan 1 gom cac system call: Create, Open, Close, Read, Write.
