@@ -8,9 +8,9 @@ int main()
     int id;
     int resultCode;
     int type;
-    PrintString("Vui long nhap ten file va duong dan\n");
+    PrintString("Vui long nhap ten file\n");
     PrintString("Vi du: filename.txt\n");
-    PrintString("Vui long nhap ten file va duong dan muon create (do dai toi da la 50): ");
+    PrintString("Vui long nhap ten file create (do dai toi da la 50): ");
     ReadString(filename, 100);
     resultCode = Create(filename);
     if (resultCode == 0)
@@ -25,6 +25,7 @@ int main()
             resultCode = Write(writeString, 100, id);
             PrintString("Nhap chuoi 2 muon them vao file: ");
             ReadString(writeString, 100);
+            Seek(resultCode, id);
             resultCode = Write(writeString, 100, id);
             resultCode = Close(id);
             if (resultCode == 0)

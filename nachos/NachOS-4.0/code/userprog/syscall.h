@@ -18,24 +18,23 @@
 /* system call codes -- used by the stubs to tell the kernel which system call
  * is being asked for
  */
-#define SC_Halt		0
-#define SC_Exit		1
-#define SC_Exec		2
-#define SC_Join		3
-#define SC_Create	4
-#define SC_Remove       5
-#define SC_Open		6
-#define SC_Read		7
-#define SC_Write	8
-#define SC_Seek         9
-#define SC_Close	10
-#define SC_ThreadFork	11
-#define SC_ThreadYield	12
-#define SC_ExecV	13
-#define SC_ThreadExit   14
-#define SC_ThreadJoin   15
-
-#define SC_Add		42
+#define SC_Halt			    0
+#define SC_Exit 			1
+#define SC_Exec			    2
+#define SC_Join			    3
+#define SC_Create 		    4
+#define SC_Remove	        5
+#define SC_Open			    6
+#define SC_Read		    	7
+#define SC_Write			8
+#define SC_Seek    		    9
+#define SC_Close			10
+#define SC_ThreadFork	    11
+#define SC_ThreadYield	    12
+#define SC_ExecV			13
+#define SC_ThreadExit   	14
+#define SC_ThreadJoin       15
+#define SC_Add			    42
 // Lab1
 #define SC_ReadNum		    43
 #define SC_PrintNum         44
@@ -51,6 +50,7 @@
 #define SC_Signal           52
 #define SC_GetProcessID     53
 #define SC_GetFileLength    54
+#define SC_Tell             55
 
 #ifndef IN_ASM
 
@@ -67,7 +67,6 @@
 /* Stop Nachos, and print out performance stats */
 void Halt();		
  
- 
 /*
  * Add the two operants and return the result
  */ 
@@ -77,7 +76,7 @@ int Add(int op1, int op2);
 /* Address space control operations: Exit, Exec, Execv, and Join */
 
 /* This user program is done (status = 0 means exited normally). */
-void Exit(int status);	
+	
 
 /* A unique identifier for an executing user program (address space) */
 typedef int SpaceId;	
@@ -85,10 +84,11 @@ typedef int SpaceId;
 /* A unique identifier for a thread within a task */
 typedef int ThreadId;
 
+void Exit(int status);	
 /* Run the specified executable, with no args */
 /* This can be implemented as a call to ExecV.
  */ 
-SpaceId Exec(char* exec_name);
+//SpaceId Exec(char* exec_name);
 
 /* Run the executable, stored in the Nachos file "argv[0]", with
  * parameters stored in argv[1..argc-1] and return the 
@@ -99,7 +99,7 @@ SpaceId ExecV(int argc, char* argv[]);
 /* Only return once the user program "id" has finished.  
  * Return the exit status.
  */
-int Join(SpaceId id); 	
+//int Join(SpaceId id); 	
  
 
 /* File system operations: Create, Remove, Open, Read, Write, Close
@@ -119,11 +119,11 @@ typedef int OpenFileId;
  * Read and Write can be used directly on these, without first opening
  * the console device.
  */
-
-#define InputConsoleIn	    0  
-#define OutputConsoleOut  	1
-#define ReadAndWrite        0  
-#define OnlyRead            1 
+//Em chinh lai cai nay
+#define InputConsoleIn	0  // Dai dien cho viec nhap du lieu tu console input (STDIN)
+#define OutputConsoleOut 1  // Dai dien cho viec xuat du lieu ra console output (STDOUT)
+#define ReadAndWrite 0 // Tham so dung de chi ra rang file do co the doc va ghi binh thuong
+#define OnlyRead 1 // Tham so dung de chi ra rang file do chi co the doc chu khong viet vao duoc
  
 /* Create a Nachos file, with name "name" */
 /* Note: Create does not open the file.   */
@@ -135,7 +135,6 @@ int Remove(char *name);
 
 /* Open the Nachos file "name", and return an "OpenFileId" that can 
  * be used to read and write to the file.
- * with type 1 is for only read
  */
 OpenFileId Open(char *name, int type);
 
@@ -151,7 +150,7 @@ int Write(char *buffer, int size, OpenFileId id);
  * characters to read, return whatever is available (for I/O devices, 
  * you should always wait until you can return at least one character).
  */
-int Read(char *buffer, int size, OpenFileId id);
+int Read(char *buffer, int charcount, OpenFileId id);
 
 /* Set the seek position of the open file "id"
  * to the byte "position".
@@ -190,21 +189,26 @@ int ThreadJoin(ThreadId id);
 /*
  * Deletes current thread and returns ExitCode to every waiting lokal thread.
  */
-void ThreadExit(int ExitCode);	
+void ThreadExit(int ExitCode);
+
+//multiprogramming
+int Exec(char* name);
+int Join(int id);
+void Exit(int exitCode);
 
 // Lab1 functions
-int ReadNum();
-void PrintNum(int number);
-char ReadChar();
-void PrintChar(char character);
-int RandomNum();
-void ReadString(char* buffer, int length);
-void PrintString (char* buffer);
+int ReadNum(); // Doc vao so integer tu ban phim
+void PrintNum(int number); // Ghi so integer number ra man hinh
+char ReadChar(); // Doc 1 ki tu char tu ban phim
+void PrintChar(char character); // In ki tu character ra man hinh
+int RandomNum(); // Tao ngau nhien 1 so integer 
+void ReadString(char* buffer, int length); // Doc chuoi tu ban phim dai length va luu vao buffer 
+void PrintString (char* buffer); // Ghi chuoi buffer ra man hinh
 
 // Lab2 function
-int CreateSemaphore(char* name, int semval);
-int Wait(char* name);
-int Signal(char* name);
+int CreateSemaphore(char* name, int semval); // Tao semaphore co ten name voi so luong la semval
+int Wait(char* name); // Dua semaphore name ve trang thai sleep bang ham wait <=> down
+int Signal(char* name); // Dua semphore name vao trang thai hoat dong bang ham signal <=> up
 // Ham se tra ve current thread (process id hien tai)
 int GetProcessID();
 /* Ham se tra ve kich thuoc thuc te cua file
@@ -212,6 +216,9 @@ int GetProcessID();
 *+ Output: -1 neu that bai, kich thuoc file neu thanh cong
 */
 int GetFileLength(OpenFileId id);
+// Tra ve vi tri hien tai cua con tro file trong tap tin co id cho truoc
+int Tell(OpenFileId id);
+//end
 
 #endif /* IN_ASM */
 

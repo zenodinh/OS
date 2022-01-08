@@ -59,7 +59,7 @@ void PCB::JoinWait()
     joinsem->P();
 }
 
-//giai phong joinwait.
+//giai phong joinwait
 void PCB::JoinRelease()
 {
     joinsem->V();
@@ -82,7 +82,7 @@ char *PCB::GetFileName() { return this->ProcessName; }
 
 int PCB::Exec(char *filename, int pid)
 {
-    multex->P();
+    multex->P(); // Dam bao tai 1 thoi diem chi co 1 tien trinh duoc phep chay
     this->thread = new Thread(filename);
 
     if (this->thread == NULL)

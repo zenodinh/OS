@@ -1,17 +1,35 @@
 #include "syscall.h"
-
-#define MAX_STUDENTS_IN 5
+#define MAX_STUDENTS 5
 // Bai toan: n sinh vien xai 1 voi nuoc
+
+int ReadSLSV(int FileID)
+{
+    int result = 0;
+    char ch;
+    while (1)
+    {
+        if (Read(&ch, 1, FileID) == 1)
+        {
+            if (ch >= '0' && ch <= '9')
+                result = result * 10 + (ch - '0');
+        }
+        else
+        {
+            return result;
+        }
+    }
+    return -1;
+}
 
 int main()
 {
-    int fileID;     // Dung de luu lai id cua file sau Open
-    int SLSV;       // So luong sinh vien rot nuoc
-    int i;          // Dung cho ham for
-    char temp;      // Bien tam
-    int readResult; // Luu ket qua cua ham read
-    int solitId;
-    int SinhVien[MAX_STUDENTS_IN]; // Khai bao so vien vien toi da = 5
+    int fileID;             // Dung de luu lai id cua file sau Open
+    int SLSV;               // So luong sinh vien rot nuoc
+    int i;                  // Dung cho ham for
+    char temp;              // Bien tam
+    int exec[MAX_STUDENTS]; // Khai bao so vien vien toi da = 5
+    int join[MAX_STUDENTS];
+    PrintChar('\n');
     // Kiem tra mo file input.txt
     fileID = Open("input.txt", OnlyRead);
     if (fileID == -1)
@@ -20,54 +38,44 @@ int main()
         return 0;
     }
     //TODO: Doc so luong sinh vien
-    SLSV = 0;
-    while (1)
-    {
-        readResult = Read(&temp, 1, fileID);
-        if (readResult == -1)
-        {
-            PrintString("Khong the doc duoc file!!\n");
-            Close(fileID);
-            return 0;
-        }
-        else if (readResult == -2)
-            break;
-        //TODO: Cap nhat so luong sinh vien
-        SLSV = SLSV * 10 + ((int)temp - 48);
-    }
-    Close(fileID); // Dong file input.txt
-    
-    PrintString("So luong sinh vien: ");
-    PrintNum(SLSV);
-    PrintChar('\n');
+    SLSV = ReadSLSV(fileID);
 
     //TODO: So luong sinh vien = 1 -> 5
-    if (SLSV < 1 || SLSV > 5)
+    if (SLSV < 1 || SLSV > MAX_STUDENTS)
     {
+        Close(fileID); // Dong file input.txt
         PrintString("So luong sinh vien vuot muc cho phep!!\n");
         return 0;
     }
     //TODO: Tao file output.txt de xuat ket qua
     if (Create("output.txt") == -1)
     {
+        Close(fileID); // Dong file input.txt
         PrintString("Khong the tao file output.txt!!\n");
         return 0;
     }
     // TODO: Tao 2 semaphore
-    CreateSemaphore("main", 0);
-    CreateSemaphore("lock", 1);
+    CreateSemaphore("Main", 0); // Main dai dien cho tien trinh cha la sinhvien_voinuoc
+    CreateSemaphore("Voinuoc", 1); // Voinuoc dai dien cho mien gang voi nuoc ma cac sinh vien
+                                   // la cac chuong trinh muon tranh nhau de su dung
 
     for (i = 0; i < SLSV; ++i)
-        SinhVien[i] = Exec("sinhvien");
-    
-    temp = 0;
-    while (temp < SLSV)
+        exec[i] = Exec("sinhvien"); // Ta thuc hien chay cac chuong trinh hay cho sinh vien tranh nhau rot nuoc
+
+    temp = SLSV;
+    // Ham while tuong trung cho viec cac sinh vien lan luot hoan tat viec rot nuoc
+    while (temp > 0)
     {
-        Wait("main");
-        ++temp;
+        Wait("Main");
+        --temp;
     }
+    // Sau khi sinh vien rot nuoc xong thi ta se goi join de cho tien trinh sinh vien quay lai ve tien trinh main
     for (i = 0; i < SLSV; ++i)
-        Join(SinhVien[i]);
-
+        join[i] = Join(exec[i]);
+    // Va cuoi cung la goi exit de thoat tien trinh sinh vien da join
+    for (i = 0; i < SLSV; ++i)
+        Exit(join[i]);
+        
+    Close(fileID); // Dong file input.txt
     return 1;
 }

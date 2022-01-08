@@ -56,6 +56,7 @@ class Instruction {
 void
 Machine::Run()
 {
+
     Instruction *instr = new Instruction;  // storage for decoded instruction
 
     if (debug->IsEnabled('m')) {
@@ -69,6 +70,7 @@ Machine::Run()
 	if (singleStep && (runUntilTime <= kernel->stats->totalTicks))
 	  Debugger();
     }
+
 }
 
 

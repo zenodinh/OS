@@ -191,7 +191,7 @@
 # of "-DSIM_FIX" to the DEFINES.  This should be enabled by default
 # and eventually will not require the symbol definition
 ################################################################
-DEFINES =  -DFILESYS_STUB -DRDATA -DSIM_FIX #-DFILESYS
+DEFINES = -DFILESYS_STUB -DRDATA -DSIM_FIX
 
 
 #####################################################################
@@ -264,24 +264,25 @@ MACHINE_O = interrupt.o stats.o timer.o console.o machine.o mipssim.o\
 	translate.o network.o disk.o
 
 THREAD_H = ../threads/alarm.h\
-	../threads/kernel.h\
 	../threads/main.h\
 	../threads/scheduler.h\
 	../threads/switch.h\
 	../threads/synch.h\
 	../threads/synchlist.h\
+	../threads/kernel.h\
 	../threads/thread.h
-
+	
 THREAD_C = ../threads/alarm.cc\
-	../threads/kernel.cc\
 	../threads/main.cc\
 	../threads/scheduler.cc\
 	../threads/synch.cc\
 	../threads/synchlist.cc\
+	../threads/kernel.cc\
 	../threads/thread.cc
+	
+THREAD_O = alarm.o main.o scheduler.o synch.o kernel.o thread.o
 
-THREAD_O = alarm.o kernel.o main.o scheduler.o synch.o thread.o
-
+#Cap nhat file randomint.h
 USERPROG_H = ../userprog/addrspace.h\
 	../userprog/syscall.h\
 	../userprog/synchconsole.h\
@@ -290,6 +291,7 @@ USERPROG_H = ../userprog/addrspace.h\
 	../userprog/ptable.h\
 	../userprog/stable.h
 
+#Cap nhat file randomint.cc
 USERPROG_C = ../userprog/addrspace.cc\
 	../userprog/exception.cc\
 	../userprog/synchconsole.cc\
@@ -297,6 +299,7 @@ USERPROG_C = ../userprog/addrspace.cc\
 	../userprog/ptable.cc\
 	../userprog/stable.cc
 
+#Cap nhat file randomint.o
 USERPROG_O = addrspace.o exception.o synchconsole.o pcb.o ptable.o stable.o
 
 FILESYS_H =../filesys/directory.h \

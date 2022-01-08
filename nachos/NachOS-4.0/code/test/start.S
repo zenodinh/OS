@@ -277,7 +277,13 @@ GetFileLength:
 	j	$31
 	.end GetFileLength
 
-
+.globl Tell
+	.ent	Tell
+Tell:
+	addiu $2,$0,SC_Tell
+	syscall
+	j	$31
+	.end Tell
 
 	
 /* dummy function to keep gcc happy */

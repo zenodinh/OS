@@ -1,7 +1,7 @@
 #include "stable.h"
 
 //////////////////////////////// Cai dat cho lop Sem ////////////////////////////////
-Sem::Sem(char* na, int i)
+Sem::Sem(char *na, int i)
 {
     strcpy(this->name, na);
     sem = new Semaphore(this->name, i);
@@ -84,27 +84,35 @@ int STable::Wait(char *name)
             // Truong hop da co thi kiem tra tham so name va name cua Sem trong semTab
             if (strcmp(name, semTab[i]->GetName()) == 0)
             {
-                // Neu ton tai thi cho semaphore down();
+                // Neu ton tai thi cho semaphore down()
                 semTab[i]->wait();
-                return 0;
+                return 0; // Tra ve 0 khi da wait name thanh cong
             }
         }
     }
-    printf("Loi STable::Wait: Khong ton tai semaphore = %s!!\n",name);
+    // Truong hop khong tim thay name hoac khong the wait duoc
+    printf("Loi STable::Wait: Khong ton tai semaphore = %s!!\n", name);
     return -1;
 }
 
 int STable::Signal(char *name)
 {
     for (int i = 0; i < MAX_SEMAPHORE; ++i)
+    {
+        // Kiem tra vi tri i da duoc nap semaphore chua?
         if (bm->Test(i))
+        {
+            // Truong hop da co thi kiem tra tham so name va name cua Sem trong semTab
             if (strcmp(name, semTab[i]->GetName()) == 0)
             {
+                // Neu ton tai thi cho semaphore up()
                 semTab[i]->signal();
-                return 0;
+                return 0; // Tra ve 0 khi da signal name thanh cong
             }
-
-    printf("Loi STable::Signal: Khong ton tai semaphore = %s!!\n",name);
+        }
+    }
+    // Truong hop khong tim thay name hoac khong the signal duoc
+    printf("Loi STable::Signal: Khong ton tai semaphore = %s!!\n", name);
     return -1;
 }
 

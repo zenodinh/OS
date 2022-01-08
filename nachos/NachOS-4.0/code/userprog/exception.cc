@@ -25,6 +25,7 @@
 #include "main.h"
 #include "syscall.h"
 #include "ksyscall.h"
+#define FILE_NAME_LIMIT 64
 //----------------------------------------------------------------------
 // ExceptionHandler
 // 	Entry point into the Nachos kernel.  Called when a user program
@@ -47,7 +48,6 @@
 //	"which" is the kind of exception.  The list of possible exceptions
 //	is in machine.h.
 //----------------------------------------------------------------------
-
 void ExceptionHandler(ExceptionType which)
 {
 	int type = kernel->machine->ReadRegister(2);
@@ -60,17 +60,17 @@ void ExceptionHandler(ExceptionType which)
 		switch (type)
 		{
 		case SC_Halt:
+		{
 			DEBUG(dbgSys, "Shutdown, initiated by user program.\n");
 
 			SysHalt();
 
 			ASSERTNOTREACHED();
 			break;
-
+		}
 		case SC_Add:
 		{
 			DEBUG(dbgSys, "Add " << kernel->machine->ReadRegister(4) << " + " << kernel->machine->ReadRegister(5) << "\n");
-
 			/* Process SysAdd Systemcall*/
 			int result;
 			result = SysAdd(/* int op1 */ (int)kernel->machine->ReadRegister(4),
@@ -79,25 +79,12 @@ void ExceptionHandler(ExceptionType which)
 			DEBUG(dbgSys, "Add returning with " << result << "\n");
 			/* Prepare Result */
 			kernel->machine->WriteRegister(2, (int)result);
-
-			/* Modify return point */
-			{
-				/* set previous programm counter (debugging only)*/
-				kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
-
-				/* set programm counter to next instruction (all Instructions are 4 byte wide)*/
-				kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
-
-				/* set next programm counter for brach execution */
-				kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
-			}
-
+			IncreaseCounter();
 			return;
-
 			ASSERTNOTREACHED();
-
 			break;
 		}
+
 		case SC_ReadNum:
 		{
 			int value = 0;
@@ -192,8 +179,10 @@ void ExceptionHandler(ExceptionType which)
 			ASSERTNOTREACHED();
 			break;
 		}
+
 		case SC_Create:
 		{
+			// Cu phap: int Create(char* buffer);
 			// Input: Dia chi tu vung nho user cua ten file
 			// Output: Loi: -1, Thanh cong: 0
 			// Tao ra file moi voi ten file la tham so dau vao
@@ -226,7 +215,7 @@ void ExceptionHandler(ExceptionType which)
 			}
 			DEBUG('a', '\n Finish reading filename');
 			bool test;
-			test = kernel->fileSystem->Create(filename, 0);
+			test = kernel->fileSystem->Create(filename);
 			if (!test)
 			{ // Tao file
 				// that bai
@@ -239,15 +228,19 @@ void ExceptionHandler(ExceptionType which)
 				kernel->machine->WriteRegister(2, 0);
 			}
 
-			delete filename;
+			delete[] filename;
 			IncreaseCounter();
 			return;
 			ASSERTNOTREACHED();
 
 			break;
 		}
+
 		case SC_Open:
 		{
+			// Cu phap: int Open(char* filename, int type);
+			// Input: ten file can mo (co the bao gom duong dan) va kieu file (0 la binh thuong con 1 la chi doc)
+			// Output: OpenFileId id trong fileTable dai dien cho tap tin vua mo
 			char *filename;
 			int freeSlot;
 
@@ -256,36 +249,23 @@ void ExceptionHandler(ExceptionType which)
 			int filenameMaxLength = 32;
 			// Chuyen du lieu tu user space sang kernel space
 			filename = User2Kernel(virtAddr, filenameMaxLength + 1);
-			// Kiem tra con vi tri trong cua bang mo ta fileTable de them vao
-			freeSlot = kernel->fileSystem->FindFreeSlot();
-
-			if (freeSlot > 1 && freeSlot < 10) // fileTable con slot trong thi mo thuc thi tiep
+			// Kiem tra kieu file muon thuc thi co thuoc loai chi doc hoac doc va ghi khong
+			if (type == OnlyRead || type == ReadAndWrite)
 			{
-				// Kiem tra kieu file muon thuc thi co thuoc loai chi doc hoac doc va ghi khong
-				if (type == OnlyRead || type == ReadAndWrite)
-				{
-					// Mo file va them vao bang mo ta fileTable
-					kernel->fileSystem->fileTable[freeSlot] = kernel->fileSystem->Open(filename, type);
-					if (kernel->fileSystem->fileTable[freeSlot] != NULL)
-						kernel->machine->WriteRegister(2, freeSlot);
-				}
-				else if (type == 2) // Quy uoc la stdin
-					kernel->machine->WriteRegister(2, InputConsoleIn);
-				else if (type == 3) // Quy uoc la stdout
-					kernel->machine->WriteRegister(2, OutputConsoleOut);
-				else
-					kernel->machine->WriteRegister(2, -1); // Mo file bi loi do type khong hop le
-
-				delete filename;
+				// Lay vi tri trong fileTable tu ham Open
+				// Do ham open
+				int freeSlot = kernel->fileSystem->Open(filename, type);
+				// if (kernel->fileSystem->fileTable[freeSlot] != NULL)
+				kernel->machine->WriteRegister(2, freeSlot);
+				delete[] filename;
 				IncreaseCounter();
 				return;
 				ASSERTNOTREACHED();
 				break;
 			}
-
 			kernel->machine->WriteRegister(2, -1);
 
-			delete filename;
+			delete[] filename;
 			IncreaseCounter();
 			return;
 			ASSERTNOTREACHED();
@@ -293,13 +273,16 @@ void ExceptionHandler(ExceptionType which)
 		}
 		case SC_Close:
 		{
+			// Cu phap: int Close(OpenFileId id);
+			// Input: id dai dien cho file dinh close
+			// Output: Tra ve -1 neu that bai, 0 neu thanh cong
 			OpenFileId id = kernel->machine->ReadRegister(4);
-			// Kiem tra id phai thuoc bang mo ta fileTable va tap tin ton tai
+			// Kiem tra id phai thuoc bang mo ta fileTable va tap tin co ton tai khong
 			if (id >= 0 && id < 10 && kernel->fileSystem->fileTable[id] != NULL)
 			{
-				delete kernel->fileSystem->fileTable[id];
-				kernel->fileSystem->fileTable[id] = NULL;
-				kernel->machine->WriteRegister(2, 0);
+				// Ta goi ham close trong lop fileSystem de giup dong file
+				int result = kernel->fileSystem->Close(id);
+				kernel->machine->WriteRegister(2, result);
 				IncreaseCounter();
 				return;
 				ASSERTNOTREACHED();
@@ -313,6 +296,9 @@ void ExceptionHandler(ExceptionType which)
 		}
 		case SC_Read:
 		{
+			// Cu phap: int Read(char* buffer, int size, OpenFileId id);
+			// Input: Buffer dung de luu chuoi doc tu file vao, size la kich thuoc ma ta muon doc, id dai dien cho file muon doc
+			// Output: tra ve -1 neu that bai, So byte doc duoc neu thanh cong
 			int realSize = 0;
 			int virtAddr = kernel->machine->ReadRegister(4);  // Doc vi tri cua buffer trong thanh ghi r4
 			int size = kernel->machine->ReadRegister(5);	  // Doc kich thuoc chuoi yeu cau trong thanh ghi r5
@@ -385,20 +371,22 @@ void ExceptionHandler(ExceptionType which)
 				IncreaseCounter();
 				return;
 			}
-			else
+			else // Truong hop file rong hoac da doc toi cuoi file
 			{
-				DEBUG(dbgSys, "Tap tin khong co du lieu!!\n");
+				DEBUG(dbgSys, "Tap tin khong con du lieu!!\n");
 				kernel->machine->WriteRegister(2, -2);
 			}
-			delete buffer;
+			delete[] buffer;
 			IncreaseCounter();
 			return;
 			ASSERTNOTREACHED();
 			break;
 		}
-
 		case SC_Write:
 		{
+			// Cu phap: int Write(char* buffer, int size, OpenFileId id);
+			// Input: Buffer la chuoi muon ghi ra file, size la kich thuoc ma ta muon ghi, id dai dien cho file muon ghi
+			// Output: tra ve -1 neu that bai, So byte ghi duoc neu thanh cong
 			int realSize = 0;								  // So du lieu ghi thuc su
 			int virtAddr = kernel->machine->ReadRegister(4);  // Ghi vi tri cua buffer trong thanh ghi r4
 			int size = kernel->machine->ReadRegister(5);	  // Ghi kich thuoc chuoi yeu cau trong thanh ghi r5
@@ -438,6 +426,7 @@ void ExceptionHandler(ExceptionType which)
 				IncreaseCounter();
 				return;
 			}
+			// Truong hop file voi id nay khong ton tai
 			if (kernel->fileSystem->fileTable[id] == NULL)
 			{
 				printf("\nLoi Write: Tap tin id = %d khong ton tai", id);
@@ -445,6 +434,7 @@ void ExceptionHandler(ExceptionType which)
 				IncreaseCounter();
 				return;
 			}
+			// Truong hop ghi du lieu vao file chi doc
 			if (kernel->fileSystem->fileTable[id]->type == OnlyRead)
 			{
 				printf("\nLoi Write: Khong the ghi du lieu vao tap tin chi doc");
@@ -453,22 +443,29 @@ void ExceptionHandler(ExceptionType which)
 				return;
 			}
 			buffer = User2Kernel(virtAddr, size);
+			// De ghi chinh xac chuoi buffer thi ta can tinh lai kich thuoc cua no (buffer)
 			size = GetSizeOfString(buffer);
+			// Truoc khi ghi ta phai danh dau lai vi tri hien tai vi sau khi ghi
 			oldPos = kernel->fileSystem->fileTable[id]->GetCurrentPos();
 
 			if (kernel->fileSystem->fileTable[id]->Write(buffer, size) > 0)
 			{
+				// Do ta de ham Write vao dieu kien if nen can co cach khac de biet so byte da ghi
+				// Ta se lay vi tri hien tai cua con tro file (vi tri sau khi ghi)
 				newPos = kernel->fileSystem->fileTable[id]->GetCurrentPos();
+				// So byte ghi thuc su chinh la khoang cach tu vi tri cu toi vi tri moi
 				realSize = newPos - oldPos;
+				// Sau khi ghi xong thi ta phai tra buffer ve lai user space
 				kernel2user(virtAddr, realSize, buffer);
 				kernel->machine->WriteRegister(2, realSize);
+				
 				delete[] buffer;
 				IncreaseCounter();
 				return;
 				ASSERTNOTREACHED();
 				break;
 			}
-			else
+			else // Truong hop khong ghi duoc gi vao file
 				kernel->machine->WriteRegister(2, -2);
 			delete buffer;
 			IncreaseCounter();
@@ -476,11 +473,16 @@ void ExceptionHandler(ExceptionType which)
 			ASSERTNOTREACHED();
 			break;
 		}
+
 		case SC_Exec:
 		{
+			// Cu phap: SpaceId Exec(char* process);
+			// Input: ten chuong trinh (tien trinh) muon exec (vi du chuong trinh sinhvien)
+			// Output: tra ve -1 neu that bai, tra ve spaceID dai dien cho chuong trinh vua moi exec
 			int maxLength = 30;
 			int virtAddr = kernel->machine->ReadRegister(4);
 			char *name = User2Kernel(virtAddr, maxLength);
+
 			if (name == NULL) // Truong hop name khong hop le
 			{
 				printf("Loi Exec: Khong du bo nho!!\n");
@@ -495,17 +497,19 @@ void ExceptionHandler(ExceptionType which)
 			{
 				printf("Loi Exec: Khong the mo duoc file!!\n");
 				kernel->machine->WriteRegister(2, -1);
+				delete[] name;
 				IncreaseCounter();
 				return;
 				ASSERTNOTREACHED();
 				break;
 			}
+
+			delete file;
 			// Truong hop nay da mo duoc file
 			int result = kernel->pTab->ExecUpdate(name);
-			// printf("result = %d\n", result);
 			kernel->machine->WriteRegister(2, result);
 			delete[] name;
-			delete file;
+
 			IncreaseCounter();
 			return;
 			ASSERTNOTREACHED();
@@ -513,10 +517,13 @@ void ExceptionHandler(ExceptionType which)
 		}
 		case SC_Join:
 		{
+			// Cu phap: int Join(SpaceId id);
+			// Input: id dai dien cho ten chuong trinh (tien trinh) muon join (vi du chuong trinh sinhvien)
+			// Output: tra ve -1 neu that bai, tra ve 0 neu chuong trinh join thanh cong
 			SpaceId id = kernel->machine->ReadRegister(4); // Doc id tu thanh ghi R4
 
-			int result = kernel->pTab->JoinUpdate(id);
-			kernel->machine->WriteRegister(2, result);
+			int ec = kernel->pTab->JoinUpdate(id);
+			kernel->machine->WriteRegister(2, ec);
 
 			IncreaseCounter();
 			return;
@@ -525,21 +532,26 @@ void ExceptionHandler(ExceptionType which)
 		}
 		case SC_Exit:
 		{
+			// Cu phap: void Exit(int exitcode);
+			// Input: exitcode dai dien cho trang thai hoan thanh cua chuong trinh vua join
+			// Output: Khong co
 			int exitStatus = kernel->machine->ReadRegister(4);
+
 			// Truong hop exitStatus != 0 nghia la chuong trinh bi loi
-			// if (exitStatus != 0)
-			// {
-			// 	IncreaseCounter();
-			// 	return;
-			// 	ASSERTNOTREACHED();
-			// 	break;
-			// }
+			if (exitStatus != 0)
+			{
+				IncreaseCounter();
+				return;
+				ASSERTNOTREACHED();
+				break;
+			}
 			// Truong hop chuong trinh hoan thanh thanh cong
 			// Goi ham cap nhat exit
 			int result = kernel->pTab->ExitUpdate(exitStatus);
 			// Giai phong chuong trinh khi ket thuc ham
-			// kernel->currentThread->FreeSpace();
-			// kernel->currentThread->Finish();
+			kernel->currentThread->FreeSpace();
+			kernel->currentThread->Finish();
+
 			IncreaseCounter();
 			return;
 			ASSERTNOTREACHED();
@@ -548,6 +560,9 @@ void ExceptionHandler(ExceptionType which)
 
 		case SC_CreateSemaphore:
 		{
+			// Cu phap: int CreateSemaphore(char* name, int semval);
+			// Input: name dai dien cho ten semaphore muon tao, semval la so luong semaphore nay
+			// Output: tra ve -1 neu that bai, 0 neu thanh cong
 			int fname_size = 32;
 			//Read name address
 			int nameAddr = kernel->machine->ReadRegister(4);
@@ -555,8 +570,9 @@ void ExceptionHandler(ExceptionType which)
 			//Read semval
 			int semval = kernel->machine->ReadRegister(5);
 
-			char *name = User2Kernel(nameAddr, fname_size);
+			char *name = User2Kernel(nameAddr, fname_size + 1);
 
+			// Truong hop ten semaphore la rong
 			if (name == NULL)
 			{
 				DEBUG('a', "\nNot enough memory in System");
@@ -566,27 +582,32 @@ void ExceptionHandler(ExceptionType which)
 				IncreaseCounter();
 				return;
 			}
-
+			// Neu name hop le thi ta goi ham Create cua lop Stable de giup ta tao semphore
 			int res = kernel->semTab->Create(name, semval);
-
+			// Truong hop ham Create khong tao duoc semaphore
 			if (res == -1)
 			{
-				DEBUG('a', "\nKhong the khoi tao semaphore");
-				printf("\nKhong the khoi tao semaphore");
+				DEBUG('a', "Loi CreateSemaphore: Khong the khoi tao semaphore!!\n");
+				printf("Loi CreateSemaphore: Khong the khoi tao semaphore %s!!\n", name);
 				kernel->machine->WriteRegister(2, -1);
 				delete[] name;
 				IncreaseCounter();
 				return;
 			}
-
+			// In ra thong bao la semaphore co ten name duoc tao thanh cong
+			printf("CreateSemaphore: Tao semaphore %s thanh cong\n", name);
 			delete[] name;
 			kernel->machine->WriteRegister(2, res);
+
 			IncreaseCounter();
 			return;
 		}
 
 		case SC_Wait:
 		{
+			// Cu phap: int Wait(char* name);
+			// Input: name dai dien cho ten cua semaphore muon wait
+			// Output: tra ve -1 neu that bai, 0 neu thanh cong
 			int fname_size = 32;
 			// Read name from r4
 			int nameAddr = kernel->machine->ReadRegister(4);
@@ -608,8 +629,8 @@ void ExceptionHandler(ExceptionType which)
 			int check = kernel->semTab->Wait(name);
 			if (check == -1)
 			{
-				DEBUG('a', "\nKhong ton tai ten semaphore nay!");
-				printf("\nLoi Wait: Khong ton tai ten semaphore nay!");
+				DEBUG('a', "Khong ton tai ten semaphore nay!!\n");
+				printf("Loi Wait: Khong ton tai ten semaphore %s!!\n", name);
 				kernel->machine->WriteRegister(2, -1);
 				delete[] name;
 				IncreaseCounter();
@@ -624,11 +645,14 @@ void ExceptionHandler(ExceptionType which)
 
 		case SC_Signal:
 		{
+			// Cu phap: int Signal(char *name);
+			// Input: name dai dien cho ten semaphore muon signal
+			// Output: tra ve -1 neu that bai, 0 neu thanh cong
 			int fname_size = 32;
 			// Read name from r4
 			int nameAddr = kernel->machine->ReadRegister(4);
 			// Read name from kernel
-			char *name = User2Kernel(nameAddr, fname_size);
+			char *name = User2Kernel(nameAddr, fname_size + 1);
 
 			// Check name is available
 			if (name == NULL)
@@ -646,7 +670,7 @@ void ExceptionHandler(ExceptionType which)
 			if (check == -1)
 			{
 				DEBUG('a', "\nKhong ton tai ten semaphore nay!");
-				printf("\nKhong ton tai ten semaphore nay!");
+				printf("Loi Signal: Khong ton tai semaphore %s!!\n", name);
 				kernel->machine->WriteRegister(2, -1);
 				delete[] name;
 				IncreaseCounter();
@@ -661,6 +685,7 @@ void ExceptionHandler(ExceptionType which)
 
 		case SC_Seek:
 		{
+			// Cu phap int Seek(int position, int id)
 			//** Input: position (vi tri can seek toi), id (file id cua tap tin can seek)
 			//** Output: -1 neu that bai, 0 neu thanh cong
 
@@ -705,7 +730,7 @@ void ExceptionHandler(ExceptionType which)
 			else // Truong hop ma position co the seek toi duoc
 			{
 				kernel->fileSystem->fileTable[id]->Seek(position);
-				kernel->machine->WriteRegister(2, 0); // Tra ve 0 khi thanh cong
+				kernel->machine->WriteRegister(2, position); // Tra ve position khi thanh cong
 			}
 			IncreaseCounter();
 			return;
@@ -772,11 +797,91 @@ void ExceptionHandler(ExceptionType which)
 			ASSERTNOTREACHED();
 			break;
 		}
+
+		case SC_Tell:
+		{
+			// Cu phap: int Tell(int id)
+			// Input: id dai dien cho file muon biet vi tri hien tai
+			// Output: tra ve -1 neu that bai, vi tri hien tai cua con tro neu thanh cong
+			int id = kernel->machine->ReadRegister(4);
+			if (id < 0 || id > 9)
+			{
+				DEBUG(dbgFile, "Index " << id << " is out of range.\n");
+				kernel->machine->WriteRegister(2, -1);
+				IncreaseCounter();
+				return;
+			}
+			// Kiem tra file co ton tai khong
+			if (kernel->fileSystem->fileTable[id] == NULL)
+			{
+				DEBUG(dbgFile, "File with index "
+								   << " doesnt exist.\n");
+				kernel->machine->WriteRegister(2, -1);
+				IncreaseCounter();
+				return;
+			}
+			// Lay vi tri hien tai cua con tro file
+			int result = kernel->fileSystem->fileTable[id]->GetCurrentPos();
+			kernel->machine->WriteRegister(2, result);
+			IncreaseCounter();
+			return;
+			break;
+		}
 		default:
+		{
 			cerr << "Unexpected system call " << type << "\n";
 			break;
 		}
+		}
 		break;
+	/*Exceptions*/ //Xu ly cac truong hop exception khac trong file machine.h
+	case NoException:
+	{
+		SysHalt();
+		break;
+	}
+	case PageFaultException:
+	{
+		printf("\nNo valid translation found.\n");
+		ASSERT(FALSE);
+		break;
+	}
+	case ReadOnlyException:
+	{
+		printf("\nA program executed a system call.\n");
+		ASSERT(FALSE);
+		break;
+	}
+	case BusErrorException:
+	{
+		printf("\nA program executed a system call.\n");
+		ASSERT(FALSE);
+		break;
+	}
+	case AddressErrorException:
+	{
+		printf("\nA program executed a system call.\n");
+		ASSERT(FALSE);
+		break;
+	}
+	case OverflowException:
+	{
+		printf("\nA program executed a system call.\n");
+		ASSERT(FALSE);
+		break;
+	}
+	case IllegalInstrException:
+	{
+		printf("\nA program executed a system call.\n");
+		ASSERT(FALSE);
+		break;
+	}
+	case NumExceptionTypes:
+	{
+		printf("\nA program executed a system call.\n");
+		ASSERT(FALSE);
+		break;
+	}
 	default:
 		cerr << "Unexpected user mode exception" << (int)which << "\n";
 		break;
