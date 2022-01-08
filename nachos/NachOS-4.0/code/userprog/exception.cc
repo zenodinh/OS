@@ -403,7 +403,7 @@ void ExceptionHandler(ExceptionType which)
 				IncreaseCounter();
 				return;
 			}
-			// Truong hop doc du lieu tu Ouput console thi loi
+			// Truong hop ghi du lieu vao input console thi se loi
 			if (id == InputConsoleIn)
 			{
 				printf("\nKhong the ghi du lieu vao STDIN (console input)\n");
@@ -411,7 +411,7 @@ void ExceptionHandler(ExceptionType which)
 				IncreaseCounter();
 				return;
 			}
-			//Truong hop ghi du lieu STDOUT tu output console
+			//Truong hop ghi du lieu STDOUT vao output console
 			if (id == OutputConsoleOut)
 			{
 				buffer = User2Kernel(virtAddr, size);
