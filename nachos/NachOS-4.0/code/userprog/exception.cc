@@ -25,7 +25,7 @@
 #include "main.h"
 #include "syscall.h"
 #include "ksyscall.h"
-#define FILE_NAME_LIMIT 64
+
 //----------------------------------------------------------------------
 // ExceptionHandler
 // 	Entry point into the Nachos kernel.  Called when a user program
