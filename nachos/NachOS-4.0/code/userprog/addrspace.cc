@@ -96,10 +96,11 @@ AddrSpace::AddrSpace(char * filename)
 
     if (executable == NULL)
     {
-    	printf("Unable to open file %s\n", filename);
-	    return;
+    	printf("\nAddrspace::Error opening file: %s",filename); 
+        DEBUG(dbgFile,"\n Error opening file.");
+	return;
     }
-
+    // Doc header cua file
     executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
     if ((noffH.noffMagic != NOFFMAGIC) && (WordToHost(noffH.noffMagic) == NOFFMAGIC))
 		SwapHeader(&noffH);
@@ -108,13 +109,13 @@ AddrSpace::AddrSpace(char * filename)
  	kernel->addrLock->P();
 
 	#ifdef RDATA
-	//how big is address space?
+	// Tinh kich thuoc cua address space neu dung co RDATA, them kich thuoc readonly vao
 		size = noffH.code.size + noffH.readonlyData.size + noffH.initData.size +
 			   noffH.uninitData.size + UserStackSize;	
 													//we need to increase the size
 							//to leave room for the stack
 	#else
-	//how big is address space?
+	// Kich thuoc khi khong dung co RDATA
 		size = noffH.code.size + noffH.initData.size + noffH.uninitData.size 
 				+ UserStackSize;	// we need to increase the size
 							//to leave room for the stack
@@ -127,7 +128,7 @@ AddrSpace::AddrSpace(char * filename)
     // Number page process need
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
-
+    // Tinh so page con trong 
     int numclear = kernel->gPhysPageBitMap->NumClear();
 
     //printf("\n\nSize: %d | numPages: %d | PageSize: %d | Numclear: %d\n\n", size, numPages, PageSize, numclear);  
@@ -146,7 +147,7 @@ AddrSpace::AddrSpace(char * filename)
     for (i = 0; i < numPages; i++)
     {
     	pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-    	pageTable[i].physicalPage = kernel->gPhysPageBitMap->FindAndSet();
+    	pageTable[i].physicalPage = kernel->gPhysPageBitMap->FindAndSet(); // Tim page trong va danh dau da su dung
 	    pageTable[i].valid = TRUE;
 	    pageTable[i].use = FALSE;
 	    pageTable[i].dirty = FALSE;
@@ -157,7 +158,7 @@ AddrSpace::AddrSpace(char * filename)
     }
     kernel->addrLock->V();
 
-    // then, copy in the code and data segments into memory
+    // Copy code segment and data segments vao memory
     if (noffH.code.size > 0)
     {
 	DEBUG(dbgAddr, "Initializing code segment.");
