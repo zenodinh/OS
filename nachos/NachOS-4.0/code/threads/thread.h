@@ -92,7 +92,6 @@ class Thread {
 
        //FileTable* mTable;
     int processID;
-    int exitStatus;
     void FreeSpace(){
         if (space != NULL)
             delete space;

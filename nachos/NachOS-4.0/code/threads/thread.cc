@@ -41,7 +41,6 @@ Thread::Thread(char* threadName)
     status = JUST_CREATED;
 	
 	processID = 0;
-    exitStatus = 0;
 	
     for (int i = 0; i < MachineStateSize; i++) {
 	machineState[i] = NULL;		// not strictly necessary, since
